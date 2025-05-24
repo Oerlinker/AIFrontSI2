@@ -2,15 +2,16 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import LoginForm from '@/components/auth/LoginForm';
 
-const Index = () => {
+const Login: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  return <LoginForm />;
 };
 
-export default Index;
+export default Login;
