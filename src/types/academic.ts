@@ -1,4 +1,6 @@
 
+import { User } from './auth';
+
 export interface Materia {
   id: number;
   nombre: string;
