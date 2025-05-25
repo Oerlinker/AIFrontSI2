@@ -69,7 +69,8 @@ const PrediccionRendimiento: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedMateria, setSelectedMateria] = useState<number | null>(null);
   const [selectedEstudiante, setSelectedEstudiante] = useState<number | null>(null);
-  const [materiaCurso, setMateriaCurso] = useState<number | null>(null);
+  const [selectedCurso, setSelectedCurso] = useState<number | null>(null); // Nuevo estado para curso seleccionado
+  const [cursosDisponibles, setCursosDisponibles] = useState<Curso[]>([]); // Estado para almacenar cursos disponibles
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
@@ -103,13 +104,13 @@ const PrediccionRendimiento: React.FC = () => {
     isLoading: isLoadingEstudiantes,
     refetch: refetchEstudiantes
   } = useQuery({
-    queryKey: ['estudiantes', materiaCurso],
+    queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
       const params: { role: string; curso?: number } = { role: 'ESTUDIANTE' };
 
-      // Si hay un curso asociado a la materia, filtrar estudiantes por ese curso
-      if (materiaCurso) {
-        params.curso = materiaCurso;
+      // Si hay un curso asociado, filtrar estudiantes por ese curso
+      if (selectedCurso) {
+        params.curso = selectedCurso;
       }
 
       const response = await api.fetchUsuarios(params);
@@ -118,40 +119,40 @@ const PrediccionRendimiento: React.FC = () => {
     enabled: true // Siempre activado, pero filtrará por curso si está disponible
   });
 
-  // Efecto para obtener el curso asociado a la materia seleccionada
+  // Consulta para obtener todos los cursos
+  const {
+    data: cursos = [],
+    isLoading: isLoadingCursos
+  } = useQuery({
+    queryKey: ['cursos'],
+    queryFn: api.fetchCursos
+  });
+
+  // Efecto para manejar la selección de materia y filtrar cursos relacionados
   useEffect(() => {
-    const actualizarCursoMateria = async () => {
-      if (selectedMateria) {
-        try {
-          // Obtener la lista de cursos
-          const cursosData = await api.fetchCursos();
+    if (selectedMateria) {
+      // Filtrar los cursos que contienen la materia seleccionada
+      const cursosFiltrados = cursos.filter((curso: Curso) =>
+        curso.materias && curso.materias.includes(selectedMateria)
+      );
 
-          // Buscar el curso que contiene la materia seleccionada
-          const cursoConMateria = cursosData.find(
-            (curso: Curso) => curso.materias && curso.materias.includes(selectedMateria)
-          );
+      setCursosDisponibles(cursosFiltrados);
 
-          if (cursoConMateria) {
-            console.log(`Materia ${selectedMateria} encontrada en curso ${cursoConMateria.id}`);
-            setMateriaCurso(cursoConMateria.id);
-          } else {
-            console.log(`No se encontró curso para la materia ${selectedMateria}`);
-            setMateriaCurso(null);
-          }
-
-          // Limpiar el estudiante seleccionado para evitar inconsistencias
-          setSelectedEstudiante(null);
-        } catch (error) {
-          console.error("Error al obtener información del curso:", error);
-          setMateriaCurso(null);
+      // Si no hay curso seleccionado o el curso actual no incluye esta materia
+      if (!selectedCurso || !cursosFiltrados.some(curso => curso.id === selectedCurso)) {
+        // Si hay cursos disponibles, seleccionamos el primero
+        if (cursosFiltrados.length > 0) {
+          setSelectedCurso(cursosFiltrados[0].id);
+        } else {
+          setSelectedCurso(null);
         }
-      } else {
-        setMateriaCurso(null);
       }
-    };
-
-    actualizarCursoMateria();
-  }, [selectedMateria]);
+    } else {
+      // Si no hay materia seleccionada, mostramos todos los cursos
+      setCursosDisponibles(cursos);
+      setSelectedCurso(null);
+    }
+  }, [selectedMateria, cursos, selectedCurso]);
 
   // Consulta para obtener predicciones existentes
   const {
@@ -316,6 +317,25 @@ const PrediccionRendimiento: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="curso">Curso</Label>
+              <Select
+                onValueChange={(value) => setSelectedCurso(parseInt(value))}
+                value={selectedCurso?.toString() || ""}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar Curso" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cursosDisponibles.map((curso: Curso) => (
+                    <SelectItem key={curso.id} value={curso.id.toString()}>
+                      {curso.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="materia">Materia</Label>
               <Select
