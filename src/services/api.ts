@@ -55,8 +55,11 @@ export interface PaginatedResponse<T> {
 
 // Instancia de Axios
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL ,
-    timeout: 10000,
+    baseURL: import.meta.env.VITE_API_URL,
+    timeout: 30000, // Aumentado de 10000 a 30000 ms (30 segundos)
+    headers: {
+        'Content-Type': 'application/json',
+    }
 });
 
 // Interceptor para añadir token JWT automáticamente
@@ -64,11 +67,11 @@ axiosInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('accessToken');
     if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('Token añadido a la solicitud:', config.url);
-    } else {
-        console.warn('No hay token disponible para la solicitud:', config.url);
     }
     return config;
+}, (error) => {
+    console.error('Error en la configuración de la solicitud:', error);
+    return Promise.reject(error);
 });
 
 // Interceptor para manejar errores
@@ -76,7 +79,15 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-        console.error('Error en solicitud:', originalRequest.url, 'Status:', error.response?.status);
+
+        // Manejar timeout específicamente
+        if (error.code === 'ECONNABORTED') {
+            console.error('Tiempo de espera agotado para la solicitud:', originalRequest.url);
+            return Promise.reject({
+                ...error,
+                message: 'El servidor está tardando demasiado en responder. Por favor, inténtelo de nuevo más tarde.'
+            });
+        }
 
         // Si el error es 401 (Unauthorized) y no es una solicitud de refresh token
         if (error.response?.status === 401 &&
@@ -84,7 +95,6 @@ axiosInstance.interceptors.response.use(
             !originalRequest.url?.includes('/usuarios/login/refresh/')) {
 
             originalRequest._retry = true;
-            console.log('Intentando refrescar token...');
 
             try {
                 // Intentar refrescar el token
@@ -92,7 +102,8 @@ axiosInstance.interceptors.response.use(
                 if (refreshToken) {
                     const response = await axios.post(
                         `${import.meta.env.VITE_API_URL}/usuarios/login/refresh/`,
-                        { refresh: refreshToken }
+                        { refresh: refreshToken },
+                        { timeout: 15000 } // Timeout específico para refresh token
                     );
 
                     if (response.data.access) {
@@ -107,9 +118,26 @@ axiosInstance.interceptors.response.use(
             } catch (refreshError) {
                 console.error('Error al refrescar el token:', refreshError);
 
-                // Si hay un error al refrescar, podemos redirigir al login
+                // Si hay un error al refrescar, redirigir al login
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
                 window.dispatchEvent(new CustomEvent('auth:logout'));
+
+                return Promise.reject({
+                    ...error,
+                    message: 'Su sesión ha expirado. Por favor, inicie sesión de nuevo.'
+                });
             }
+        }
+
+        // Manejo específico de errores de red
+        if (!error.response) {
+            console.error('Error de red o servidor no disponible');
+            return Promise.reject({
+                ...error,
+                message: 'No se puede conectar con el servidor. Verifique su conexión a internet.'
+            });
         }
 
         // Propagar el error si no se puede manejar

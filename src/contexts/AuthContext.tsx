@@ -89,39 +89,22 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
         dispatch({type: 'LOGIN_START'});
 
         try {
-            console.log('Realizando solicitud de login al servidor...');
             const response = await api.login(credentials);
-            console.log('Respuesta completa del login:', response);
-
-            // Depuración detallada de la estructura del usuario
-            console.log('Estructura del usuario:', JSON.stringify(response.user, null, 2));
-            console.log('Propiedades del usuario:', Object.keys(response.user));
-            console.log('Rol del usuario:', response.user.role);
 
             // Verificar si la respuesta contiene los campos necesarios
             if (!response.access) {
-                console.error('Error: No se encontró el token de acceso en la respuesta');
                 throw new Error('La respuesta del servidor no contiene el token de acceso');
             }
 
             if (!response.user) {
-                console.error('Error: No se encontró información del usuario en la respuesta');
                 throw new Error('La respuesta del servidor no contiene información del usuario');
             }
+            const user: User = response.user;
 
-            // Adaptación para manejar el rol que podría venir como 'role' en lugar de 'rol'
-            const user = response.user;
-            if (user.role && !user.role) {
-                console.log('Adaptando campo "role" a "rol"');
-                user.role = user.role;
-            }
 
-            console.log('Estructura del usuario adaptada:', JSON.stringify(user, null, 2));
-            console.log('Estructura de la respuesta correcta, guardando en localStorage');
-
-            // Guardar en localStorage - corregido para usar las mismas claves que el interceptor de axios
+            // Guardar en localStorage
             localStorage.setItem('accessToken', response.access);
-            localStorage.setItem('refreshToken', response.refresh); // Guardar también el refresh token
+            localStorage.setItem('refreshToken', response.refresh);
             localStorage.setItem('user', JSON.stringify(user));
 
             dispatch({
@@ -136,23 +119,26 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
 
             return true;
         } catch (error) {
-            console.error('Error de login:', error);
-
-            // Intentar mostrar más información sobre el error
             let errorMessage = 'Error al iniciar sesión';
 
-            if (error.response) {
-                console.error('Datos de respuesta del error:', error.response.data);
-                console.error('Estado HTTP:', error.response.status);
-                console.error('Cabeceras de respuesta:', error.response.headers);
-
-                errorMessage = error.response.data?.detail ||
-                    (typeof error.response.data === 'string' ? error.response.data : errorMessage);
+            if (error.code === 'ECONNABORTED') {
+                errorMessage = 'El servidor está tardando demasiado en responder. Por favor, inténtelo de nuevo más tarde.';
+            } else if (error.response) {
+                // Error con respuesta del servidor
+                if (error.response.status === 401) {
+                    errorMessage = 'Credenciales incorrectas. Verifique su usuario y contraseña.';
+                } else if (error.response.data?.detail) {
+                    errorMessage = error.response.data.detail;
+                } else if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                } else if (error.response.status >= 500) {
+                    errorMessage = 'Error en el servidor. Por favor, inténtelo más tarde.';
+                }
             } else if (error.request) {
-                console.error('No se recibió respuesta del servidor:', error.request);
-                errorMessage = 'No se pudo conectar con el servidor';
+                // La solicitud fue realizada pero no se recibió respuesta
+                errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
             } else if (error.message) {
-                console.error('Mensaje de error:', error.message);
+                // Error en la configuración de la solicitud
                 errorMessage = error.message;
             }
 

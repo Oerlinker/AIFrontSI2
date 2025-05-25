@@ -231,29 +231,33 @@ const Asistencias: React.FC = () => {
   };
 
   // Verificar si está cargando
-  const isLoading = isLoadingMaterias || isLoadingEstudiantes ||
-                   (selectedMateria && selectedDate && isLoadingAsistencias);
+  const isLoading = isLoadingMaterias || isLoadingEstudiantes;
+  const isLoadingData = !!selectedMateria && !!selectedDate && isLoadingAsistencias;
 
-  // Obtener el nombre de la materia
-  const getMateriaNombre = (id: number) => {
-    const materia = materias.find((m: Materia) => m.id === id);
-    return materia ? materia.nombre : "Materia no encontrada";
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96 flex-col">
+        <Loader2 className="h-8 w-8 animate-spin mb-2" />
+        <p className="text-gray-600">Cargando información...</p>
+      </div>
+    );
+  }
+
+  // Componente para mostrar durante cargas de datos específicos
+  const LoadingOverlay = () => (
+    <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-md">
+      <div className="flex flex-col items-center">
+        <Loader2 className="h-8 w-8 animate-spin mb-2 text-academic-purple" />
+        <p className="text-sm text-gray-600">Cargando asistencias...</p>
+      </div>
+    </div>
+  );
 
   // Control de acceso - hacemos esto después de los hooks
   if (!hasAccess) {
     return (
       <div className="flex justify-center items-center h-96">
         <h1 className="text-xl text-red-500">No tienes permisos para acceder a esta página</h1>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-2">Cargando información...</p>
       </div>
     );
   }
@@ -325,14 +329,15 @@ const Asistencias: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              Asistencias: {getMateriaNombre(selectedMateria)} - {format(selectedDate, 'PPP', { locale: es })}
+              Asistencias: selectedMateria - {format(selectedDate, 'PPP', { locale: es })}
             </CardTitle>
             <CardDescription>
               Registro de asistencias para la fecha seleccionada
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border relative">
+              {isLoadingData && <LoadingOverlay />}
               <Table>
                 <TableCaption>
                   Lista de estudiantes para registrar asistencia
