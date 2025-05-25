@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,8 +9,10 @@ import {
   ClipboardCheck,
   ClipboardPlus,
   ListCheck,
-  UserPlus,
-  LogOut
+  LogOut,
+  BrainCircuit,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -29,19 +30,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { path: '/notas', label: 'Registro de Notas', icon: ClipboardPlus },
     { path: '/asistencias', label: 'Asistencias', icon: ListCheck },
     { path: '/participaciones', label: 'Participaciones', icon: ClipboardCheck },
-    { path: '/predicciones', label: 'Predicciones IA', icon: Calendar },
+    { path: '/prediccion-rendimiento', label: 'Predicciones IA', icon: BrainCircuit },
   ];
 
   const administrativoNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Grid2X2 },
-    { path: '/usuarios', label: 'Gestión de Usuarios', icon: User },
-    { path: '/materias', label: 'Materias', icon: Calendar },
-    { path: '/cursos', label: 'Cursos', icon: UserPlus },
-    { path: '/reportes', label: 'Reportes', icon: ClipboardCheck },
-    { path: '/predicciones', label: 'Predicciones IA', icon: Calendar },
+    { path: '/estudiantes', label: 'Estudiantes', icon: GraduationCap },
+    { path: '/materias', label: 'Materias', icon: BookOpen },
+    { path: '/cursos', label: 'Cursos', icon: Calendar },
+    { path: '/asistencias', label: 'Asistencias', icon: ListCheck },
+    { path: '/participaciones', label: 'Participaciones', icon: ClipboardCheck },
+    { path: '/notas', label: 'Registro de Notas', icon: ClipboardPlus },
+    { path: '/prediccion-rendimiento', label: 'Predicciones IA', icon: BrainCircuit },
   ];
 
-  const navItems = user?.rol === 'ADMINISTRATIVO' ? administrativoNavItems : profesorNavItems;
+  const navItems = user?.role === 'ADMINISTRATIVO' ? administrativoNavItems : profesorNavItems;
 
   return (
     <div className={cn(
@@ -85,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                 {user.first_name} {user.last_name}
               </p>
               <p className="text-sidebar-foreground/70 text-xs truncate">
-                {user.rol}
+                {user.role}
               </p>
             </div>
           </div>

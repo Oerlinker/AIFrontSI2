@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,10 +6,19 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Layout from "@/components/layout/Layout";
+
+// Páginas
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import Asistencias from "./pages/Asistencias";
+import Cursos from "./pages/Cursos";
+import Estudiantes from "./pages/Estudiantes";
+import Materias from "./pages/Materias";
+import Notas from "./pages/Notas";
+import Participaciones from "./pages/Participaciones";
+import PrediccionRendimiento from "./pages/PrediccionRendimiento";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,83 +50,53 @@ const App = () => (
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               
-              {/* Rutas para profesores */}
+              {/* Rutas para profesores y administrativos */}
               <Route path="notas" element={
                 <ProtectedRoute allowedRoles={['PROFESOR', 'ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Registro de Notas</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <Notas />
                 </ProtectedRoute>
               } />
               
               <Route path="asistencias" element={
                 <ProtectedRoute allowedRoles={['PROFESOR', 'ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Control de Asistencias</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <Asistencias />
                 </ProtectedRoute>
               } />
               
               <Route path="participaciones" element={
                 <ProtectedRoute allowedRoles={['PROFESOR', 'ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Registro de Participaciones</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <Participaciones />
                 </ProtectedRoute>
               } />
               
-              <Route path="predicciones" element={
+              <Route path="prediccion-rendimiento" element={
                 <ProtectedRoute allowedRoles={['PROFESOR', 'ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Predicciones de IA</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <PrediccionRendimiento />
                 </ProtectedRoute>
               } />
               
-              {/* Rutas para administrativos */}
-              <Route path="usuarios" element={
+              {/* Rutas solo para administrativos */}
+              <Route path="estudiantes" element={
                 <ProtectedRoute allowedRoles={['ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <Estudiantes />
                 </ProtectedRoute>
               } />
               
               <Route path="materias" element={
-                <ProtectedRoute allowedRoles={['ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Gestión de Materias</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                <ProtectedRoute allowedRoles={['ADMINISTRATIVO', 'PROFESOR']}>
+                  <Materias />
                 </ProtectedRoute>
               } />
               
               <Route path="cursos" element={
                 <ProtectedRoute allowedRoles={['ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Gestión de Cursos</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
+                  <Cursos />
                 </ProtectedRoute>
               } />
               
-              <Route path="reportes" element={
-                <ProtectedRoute allowedRoles={['ADMINISTRATIVO']}>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Reportes del Sistema</h1>
-                    <p className="text-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-                  </div>
-                </ProtectedRoute>
-              } />
+              {/* Ruta para página no encontrada */}
+              <Route path="*" element={<NotFound />} />
             </Route>
-            
-            {/* Ruta catch-all */}
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
