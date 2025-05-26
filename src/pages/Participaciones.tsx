@@ -58,12 +58,11 @@ interface ParticipacionFormData {
 }
 
 const tiposParticipacion = [
-  { value: 'PREGUNTA', label: 'Pregunta' },
-  { value: 'RESPUESTA', label: 'Respuesta' },
-  { value: 'EXPOSICION', label: 'Exposición' },
-  { value: 'DEBATE', label: 'Debate' },
-  { value: 'COLABORACION', label: 'Colaboración' },
-  { value: 'OTRA', label: 'Otra' },
+  { value: 'VOLUNTARIA', label: 'Pregunta voluntaria' },
+  { value: 'SOLICITADA',  label: 'Participación solicitada' },
+  { value: 'EJERCICIO',   label: 'Resolución de ejercicio' },
+  { value: 'PRESENTACION',label: 'Presentación' },
+  { value: 'DEBATE',      label: 'Debate' },
 ];
 
 const Participaciones: React.FC = () => {
@@ -78,7 +77,7 @@ const Participaciones: React.FC = () => {
     estudiante: 0,
     materia: 0,
     fecha: format(new Date(), 'yyyy-MM-dd'),
-    tipo: 'PREGUNTA',
+    tipo: 'VOLUNTARIA',
     valor: 5,
     descripcion: '',
   });
@@ -94,7 +93,7 @@ const Participaciones: React.FC = () => {
       estudiante: 0,
       materia: selectedMateria || 0,
       fecha: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-      tipo: 'PREGUNTA',
+      tipo: 'VOLUNTARIA',
       valor: 5,
       descripcion: '',
     });
