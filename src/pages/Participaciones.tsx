@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
@@ -41,7 +41,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Materia, Participacion } from '@/types/academic';
+import { Materia, Participacion, Curso } from '@/types/academic';
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
 import { MessageCircle, Plus, Pencil, Save, Loader2, Trash2 } from 'lucide-react';
@@ -69,6 +69,7 @@ const Participaciones: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedMateria, setSelectedMateria] = useState<number | null>(null);
+  const [selectedCurso, setSelectedCurso] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedEstudiante, setSelectedEstudiante] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -167,7 +168,7 @@ const Participaciones: React.FC = () => {
   const {
     data: materias = [],
     isLoading: isLoadingMaterias
-  } = useQuery({
+  } = useQuery<Materia[]>({
     queryKey: ['materias-profesor'],
     queryFn: async () => {
       if (isProfesor) {
@@ -181,16 +182,32 @@ const Participaciones: React.FC = () => {
     }
   });
 
-  // Consulta para obtener estudiantes
+  // Nueva consulta para obtener cursos
+  const {
+    data: cursos = [],
+    isLoading: isLoadingCursos
+  } = useQuery<Curso[]>({
+    queryKey: ['cursos'],
+    queryFn: api.fetchCursos,
+  });
+
+  // Calcular cursos disponibles basados en la materia seleccionada
+  const cursosDisponibles = useMemo(() => {
+    if (!selectedMateria || !cursos.length) return [];
+    return cursos.filter((curso) => curso.materias?.includes(selectedMateria));
+  }, [selectedMateria, cursos]);
+
+  // Consulta para obtener estudiantes filtrados por curso
   const {
     data: estudiantes = [],
     isLoading: isLoadingEstudiantes
-  } = useQuery({
-    queryKey: ['estudiantes'],
+  } = useQuery<User[]>({
+    queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
-      const response = await api.fetchUsuarios({ rol: 'ESTUDIANTE' });
-      return response;
-    }
+      if (!selectedCurso) return [];
+      return api.fetchEstudiantes({ curso: selectedCurso });
+    },
+    enabled: !!selectedCurso,
   });
 
   // Consulta para obtener participaciones según filtros
@@ -290,9 +307,8 @@ const Participaciones: React.FC = () => {
     }
   });
 
-  // Efecto para actualizar formData cuando cambia la selección
+  // Efecto para actualizar formData cuando cambia la selección de materia o fecha
   useEffect(() => {
-    // Prevenir actualizaciones innecesarias de estado verificando si realmente hay un cambio
     const newMateria = selectedMateria || formData.materia;
     const newFecha = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : formData.fecha;
 
@@ -300,10 +316,29 @@ const Participaciones: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         materia: newMateria,
-        fecha: newFecha
+        fecha: newFecha,
+        estudiante: 0,
       }));
     }
   }, [selectedMateria, selectedDate]);
+
+  // Efecto para manejar cambios en la selección de materia
+  useEffect(() => {
+    setSelectedCurso(null);
+    setSelectedEstudiante(null);
+    setFormData(prev => ({ ...prev, estudiante: 0 }));
+  }, [selectedMateria]);
+
+  // Efecto para auto-seleccionar el primer curso disponible
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCurso || !cursosDisponibles.find(c => c.id === selectedCurso)) {
+        setSelectedCurso(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCurso(null);
+    }
+  }, [cursosDisponibles]);
 
   // Control de acceso - hacemos esto después de los hooks
   if (!isAdmin && !isProfesor) {
@@ -336,7 +371,7 @@ const Participaciones: React.FC = () => {
   };
 
   // Verificar si está cargando
-  const isLoading = isLoadingMaterias || isLoadingEstudiantes ||
+  const isLoading = isLoadingMaterias || isLoadingEstudiantes || isLoadingCursos ||
                     ((!!selectedMateria || !!selectedDate) && isLoadingParticipaciones);
 
   if (isLoading) {
@@ -360,10 +395,10 @@ const Participaciones: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Filtros de Participación</CardTitle>
-          <CardDescription>Selecciona la materia y/o fecha para ver y registrar participaciones</CardDescription>
+          <CardDescription>Selecciona la materia, curso y/o fecha para ver y registrar participaciones</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="materia">Materia</Label>
               <Select
@@ -377,6 +412,26 @@ const Participaciones: React.FC = () => {
                   {materias.map((materia: Materia) => (
                     <SelectItem key={materia.id} value={materia.id.toString()}>
                       {materia.nombre} ({materia.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="curso">Curso</Label>
+              <Select
+                onValueChange={(value) => setSelectedCurso(parseInt(value))}
+                value={selectedCurso?.toString() || ""}
+                disabled={!selectedMateria || cursosDisponibles.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={!selectedMateria ? "Seleccione materia primero" : (cursosDisponibles.length === 0 ? "No hay cursos para esta materia" : "Seleccionar Curso")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {cursosDisponibles.map((curso: Curso) => (
+                    <SelectItem key={curso.id} value={curso.id.toString()}>
+                      {curso.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -414,7 +469,7 @@ const Participaciones: React.FC = () => {
               <Button
                 className="w-full"
                 onClick={handleOpenCreateDialog}
-                disabled={!selectedMateria}
+                disabled={!selectedMateria || !selectedCurso || estudiantes.length === 0}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Nueva Participación
@@ -523,16 +578,16 @@ const Participaciones: React.FC = () => {
                   onValueChange={(value) => handleInputChange({
                     target: { name: 'estudiante', value }
                   } as React.ChangeEvent<HTMLSelectElement>)}
-                  value={formData.estudiante.toString() || ""}
-                  disabled={!!currentParticipacion}
+                  value={formData.estudiante?.toString() || ""}
+                  disabled={!!currentParticipacion || !selectedCurso || estudiantes.length === 0}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar Estudiante" />
+                    <SelectValue placeholder={!selectedCurso ? "Seleccione curso primero" : (estudiantes.length === 0 ? "No hay estudiantes en este curso" : "Seleccionar Estudiante")} />
                   </SelectTrigger>
                   <SelectContent>
                     {estudiantes.map((estudiante: User) => (
                       <SelectItem key={estudiante.id} value={estudiante.id.toString()}>
-                        {estudiante.first_name} {estudiante.last_name}
+                        {estudiante.first_name} {estudiante.last_name} ({estudiante.username})
                       </SelectItem>
                     ))}
                   </SelectContent>
