@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
@@ -32,7 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Materia, Asistencia } from '@/types/academic';
+import { Materia, Asistencia, Curso } from '@/types/academic';
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
 import { CalendarCheck, Save, Loader2 } from 'lucide-react';
@@ -47,6 +47,7 @@ const Asistencias: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedMateria, setSelectedMateria] = useState<number | null>(null);
+  const [selectedCurso, setSelectedCurso] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [asistencias, setAsistencias] = useState<Record<number, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -76,16 +77,33 @@ const Asistencias: React.FC = () => {
     enabled: hasAccess
   });
 
-  // Consulta para obtener estudiantes
+  // Nueva consulta para obtener cursos
+  const {
+    data: cursos = [],
+    isLoading: isLoadingCursos
+  } = useQuery<Curso[]>({
+    queryKey: ['cursos'],
+    queryFn: api.fetchCursos,
+    enabled: hasAccess,
+  });
+
+  // Calcular cursos disponibles basados en la materia seleccionada
+  const cursosDisponibles = useMemo(() => {
+    if (!selectedMateria || !cursos.length) return [];
+    return cursos.filter((curso) => curso.materias?.includes(selectedMateria));
+  }, [selectedMateria, cursos]);
+
+  // Consulta para obtener estudiantes filtrados por curso
   const {
     data: estudiantes = [],
     isLoading: isLoadingEstudiantes
-  } = useQuery({
-    queryKey: ['estudiantes'],
+  } = useQuery<Estudiante[]>({
+    queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
-      return api.fetchUsuarios({ role: 'ESTUDIANTE' });
+      if (!selectedCurso) return [];
+      return api.fetchEstudiantes({ curso: selectedCurso });
     },
-    enabled: hasAccess
+    enabled: hasAccess && !!selectedCurso,
   });
 
   // Consulta para obtener asistencias según la materia y fecha seleccionadas
@@ -112,7 +130,6 @@ const Asistencias: React.FC = () => {
   // Mutación para registrar asistencias
   const registrarAsistenciasMutation = useMutation({
     mutationFn: async (asistenciasArray: Partial<Asistencia>[]) => {
-      // Procesar cada asistencia (crear o actualizar)
       const promises = asistenciasArray.map(asistenciaData => {
         const existingAsistencia = asistenciasData.find(
           (a: Asistencia) => a.estudiante === asistenciaData.estudiante &&
@@ -121,10 +138,8 @@ const Asistencias: React.FC = () => {
         );
 
         if (existingAsistencia) {
-          // Actualizar asistencia existente
           return api.updateAsistencia(existingAsistencia.id, asistenciaData);
         } else {
-          // Crear nueva asistencia
           return api.recordAsistencia(asistenciaData as Asistencia);
         }
       });
@@ -156,15 +171,10 @@ const Asistencias: React.FC = () => {
   useEffect(() => {
     if (!hasAccess) return;
 
-    // Función para verificar si ya existe el estado de asistencias y si es igual al que se quiere establecer
     const shouldUpdateState = (newAsistencias: Record<number, boolean>) => {
-      // Si no hay asistencias actuales (primer renderizado), actualizar
       if (Object.keys(asistencias).length === 0) return true;
-
-      // Si el número de estudiantes ha cambiado, actualizar
       if (Object.keys(asistencias).length !== Object.keys(newAsistencias).length) return true;
 
-      // Comparar cada valor para ver si hay cambios
       for (const id in newAsistencias) {
         if (asistencias[parseInt(id)] !== newAsistencias[parseInt(id)]) {
           return true;
@@ -180,23 +190,37 @@ const Asistencias: React.FC = () => {
         asistenciasMap[asistencia.estudiante] = asistencia.presente;
       });
 
-      // Solo actualizar el estado si es realmente necesario
       if (shouldUpdateState(asistenciasMap)) {
         setAsistencias(asistenciasMap);
       }
     } else if (estudiantes.length > 0) {
-      // Si no hay asistencias registradas, inicializar todas como presentes
       const asistenciasMap: Record<number, boolean> = {};
       estudiantes.forEach((est: Estudiante) => {
         asistenciasMap[est.id] = true;
       });
 
-      // Solo actualizar el estado si es realmente necesario
       if (shouldUpdateState(asistenciasMap)) {
         setAsistencias(asistenciasMap);
       }
     }
   }, [asistenciasData, estudiantes, hasAccess, asistencias]);
+
+  // Efecto para manejar cambios en la selección de materia
+  useEffect(() => {
+    setSelectedCurso(null);
+    setAsistencias({});
+  }, [selectedMateria]);
+
+  // Efecto para auto-seleccionar el primer curso disponible
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCurso || !cursosDisponibles.find(c => c.id === selectedCurso)) {
+        setSelectedCurso(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCurso(null);
+    }
+  }, [cursosDisponibles]);
 
   // Manejador para cambiar estado de asistencia
   const handleToggleAsistencia = (estudianteId: number) => {
@@ -208,11 +232,11 @@ const Asistencias: React.FC = () => {
 
   // Manejador para guardar las asistencias
   const handleSaveAsistencias = async () => {
-    if (!selectedMateria || !selectedDate) {
+    if (!selectedMateria || !selectedDate || !selectedCurso) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Debes seleccionar una materia y una fecha",
+        description: "Debes seleccionar una materia, un curso y una fecha",
       });
       return;
     }
@@ -231,10 +255,10 @@ const Asistencias: React.FC = () => {
   };
 
   // Verificar si está cargando
-  const isLoading = isLoadingMaterias || isLoadingEstudiantes;
-  const isLoadingData = !!selectedMateria && !!selectedDate && isLoadingAsistencias;
+  const isLoading = isLoadingMaterias || isLoadingEstudiantes || isLoadingCursos;
+  const isLoadingData = !!selectedMateria && !!selectedDate && !!selectedCurso && isLoadingAsistencias;
 
-  if (isLoading) {
+  if (isLoading && !isLoadingData) {
     return (
       <div className="flex justify-center items-center h-96 flex-col">
         <Loader2 className="h-8 w-8 animate-spin mb-2" />
@@ -271,11 +295,11 @@ const Asistencias: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Seleccionar Materia y Fecha</CardTitle>
-          <CardDescription>Selecciona la materia y la fecha para registrar asistencias</CardDescription>
+          <CardTitle>Seleccionar Materia, Curso y Fecha</CardTitle>
+          <CardDescription>Selecciona la materia, el curso y la fecha para registrar asistencias</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="materia">Materia</Label>
               <Select
@@ -289,6 +313,26 @@ const Asistencias: React.FC = () => {
                   {materias.map((materia: Materia) => (
                     <SelectItem key={materia.id} value={materia.id.toString()}>
                       {materia.nombre} ({materia.codigo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="curso">Curso</Label>
+              <Select
+                onValueChange={(value) => setSelectedCurso(parseInt(value))}
+                value={selectedCurso?.toString() || ""}
+                disabled={!selectedMateria || cursosDisponibles.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={!selectedMateria ? "Seleccione materia primero" : (cursosDisponibles.length === 0 ? "No hay cursos" : "Seleccionar Curso")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {cursosDisponibles.map((curso: Curso) => (
+                    <SelectItem key={curso.id} value={curso.id.toString()}>
+                      {curso.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -325,11 +369,11 @@ const Asistencias: React.FC = () => {
         </CardContent>
       </Card>
 
-      {selectedMateria && selectedDate ? (
+      {selectedMateria && selectedCurso && selectedDate ? (
         <Card>
           <CardHeader>
             <CardTitle>
-              Asistencias: selectedMateria - {format(selectedDate, 'PPP', { locale: es })}
+              Asistencias: {materias.find(m => m.id === selectedMateria)?.nombre} - {cursos.find(c => c.id === selectedCurso)?.nombre} - {format(selectedDate, 'PPP', { locale: es })}
             </CardTitle>
             <CardDescription>
               Registro de asistencias para la fecha seleccionada
@@ -404,7 +448,7 @@ const Asistencias: React.FC = () => {
         </Card>
       ) : (
         <div className="text-center py-8 text-gray-500">
-          <p>Selecciona una materia y una fecha para registrar asistencias</p>
+          <p>Selecciona una materia, un curso y una fecha para registrar asistencias</p>
         </div>
       )}
     </div>
