@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import api from '@/services/api';
@@ -18,7 +18,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
     Card,
@@ -31,7 +30,7 @@ import {
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {Search, Plus, Edit, Trash2, UserPlus, Loader2} from 'lucide-react';
+import {Search, Edit, Trash2, UserPlus, Loader2} from 'lucide-react';
 import {User} from '@/types/auth';
 import {Curso} from '@/types/academic';
 import {toast} from "@/hooks/use-toast";

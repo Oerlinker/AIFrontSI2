@@ -13,7 +13,7 @@ import {
     EstudianteDashboard,
     ComparativoRendimiento
 } from '@/types/academic';
-import estudiantes from "@/pages/Estudiantes.tsx";
+
 
 
 export type FilterParams = {

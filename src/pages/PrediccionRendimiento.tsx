@@ -102,7 +102,7 @@ const PrediccionRendimiento: React.FC = () => {
   const { data: estudiantes = [], isFetching: isFetchingEstudiantes } = useQuery({
     queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
-      return api.fetchUsuarios({ role: 'ESTUDIANTE', curso: selectedCurso });
+      return api.fetchUsuarios({ rol: 'ESTUDIANTE', curso: selectedCurso });
     },
     enabled: !!selectedCurso,
   });
