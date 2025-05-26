@@ -69,18 +69,17 @@ const PrediccionRendimiento: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedMateria, setSelectedMateria] = useState<number | null>(null);
   const [selectedEstudiante, setSelectedEstudiante] = useState<number | null>(null);
-  const [selectedCurso, setSelectedCurso] = useState<number | null>(null); // Nuevo estado para curso seleccionado
+  const [selectedCurso, setSelectedCurso] = useState<number | null>(null); // Nuevo estado para curso seleccionado SEGOVIA MIRA PUES TUS SELECT
   const [cursosDisponibles, setCursosDisponibles] = useState<Curso[]>([]); // Estado para almacenar cursos disponibles
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
 
-  // Verificar si el usuario es administrador o profesor
+  // Verificar si el usuario es administrador o profesor no se como manejas eso NAJAJJA asi que puse eso
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
 
-  // Consulta para obtener materias del profesor si es profesor
-  // o todas las materias si es administrador
+
   const {
     data: materias = [],
     isLoading: isLoadingMaterias
@@ -92,7 +91,7 @@ const PrediccionRendimiento: React.FC = () => {
         const allMaterias = await api.fetchMaterias();
         return allMaterias.filter((materia: Materia) => materia.profesor === user?.id);
       } else {
-        // Devolver todas las materias para administrador
+//trucazo
         return api.fetchMaterias();
       }
     }
@@ -116,7 +115,7 @@ const PrediccionRendimiento: React.FC = () => {
       const response = await api.fetchUsuarios(params);
       return response;
     },
-    enabled: true // Siempre activado, pero filtrará por curso si está disponible
+    enabled: true 
   });
 
   // Consulta para obtener todos los cursos
@@ -251,7 +250,6 @@ const PrediccionRendimiento: React.FC = () => {
     return materia ? materia.nombre : "Materia no encontrada";
   };
 
-  // Obtener color según nivel de rendimiento
   const getNivelRendimientoColor = (nivel: string) => {
     switch (nivel) {
       case 'ALTO':
@@ -265,7 +263,6 @@ const PrediccionRendimiento: React.FC = () => {
     }
   };
 
-  // Obtener icono según nivel de rendimiento
   const getNivelRendimientoIcon = (nivel: string) => {
     switch (nivel) {
       case 'ALTO':
@@ -292,7 +289,6 @@ const PrediccionRendimiento: React.FC = () => {
     );
   }
 
-  // Filtrar estudiantes que ya tienen predicciones
   const estudiantesConPrediccion = predicciones.map((p: Prediccion) => p.estudiante);
   const estudiantesSinPrediccion = estudiantes.filter((e: User) =>
     !estudiantesConPrediccion.includes(e.id)
@@ -318,25 +314,6 @@ const PrediccionRendimiento: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="curso">Curso</Label>
-              <Select
-                onValueChange={(value) => setSelectedCurso(parseInt(value))}
-                value={selectedCurso?.toString() || ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar Curso" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cursosDisponibles.map((curso: Curso) => (
-                    <SelectItem key={curso.id} value={curso.id.toString()}>
-                      {curso.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="materia">Materia</Label>
               <Select
                 onValueChange={(value) => setSelectedMateria(parseInt(value))}
@@ -355,10 +332,30 @@ const PrediccionRendimiento: React.FC = () => {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="curso">Curso</Label>
+              <Select
+                onValueChange={(value) => setSelectedCurso(parseInt(value))}
+                value={selectedCurso?.toString() || ""}
+                disabled={!selectedMateria}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={selectedMateria ? "Seleccionar Curso" : "Primero seleccione una materia"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {cursosDisponibles.map((curso: Curso) => (
+                    <SelectItem key={curso.id} value={curso.id.toString()}>
+                      {curso.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2 flex items-end">
               <Button
                 onClick={() => handleOpenCreateDialog()}
-                disabled={!selectedMateria || estudiantesSinPrediccion.length === 0}
+                disabled={!selectedMateria || !selectedCurso || estudiantesSinPrediccion.length === 0}
                 className="w-full"
               >
                 <BrainCircuit className="mr-2 h-4 w-4" />
@@ -431,7 +428,7 @@ const PrediccionRendimiento: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleOpenDetailsDialog(prediccion)}
                               >
-                                <ArrowUpRight className="h-3 w-3 mr-1" />
+                                <ArrowUpRight className="h-3 w-3 mr-1" />z
                                 Detalles
                               </Button>
                             </TableCell>
@@ -563,24 +560,26 @@ const PrediccionRendimiento: React.FC = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="estudiante">Estudiante</Label>
-              <Select
-                value={selectedEstudiante?.toString() || ""}
-                onValueChange={(value) => setSelectedEstudiante(parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estudiante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {estudiantesSinPrediccion.map((estudiante: User) => (
-                    <SelectItem key={estudiante.id} value={estudiante.id.toString()}>
-                      {estudiante.first_name} {estudiante.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {selectedMateria && selectedCurso && (
+              <div className="space-y-2">
+                <Label htmlFor="estudiante">Estudiante</Label>
+                <Select
+                  value={selectedEstudiante?.toString() || ""}
+                  onValueChange={(value) => setSelectedEstudiante(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estudiante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estudiantesSinPrediccion.map((estudiante: User) => (
+                      <SelectItem key={estudiante.id} value={estudiante.id.toString()}>
+                        {estudiante.first_name} {estudiante.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
