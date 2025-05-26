@@ -14,8 +14,6 @@ import {
     ComparativoRendimiento
 } from '@/types/academic';
 
-
-
 export type FilterParams = {
     estudiante?: number;
     materia?: number;
@@ -24,7 +22,7 @@ export type FilterParams = {
     fecha_fin?: string;
     periodo?: number;
     trimestre?: string;
-    año_academico?: string;
+    anio_academico?: string; // Corregido de año_academico
     page?: number;
     page_size?: number;
     search?: string;
@@ -156,8 +154,10 @@ const api = {
         axiosInstance.get('/usuarios/perfil/').then(res => res.data),
 
     // Usuarios
-    fetchUsuarios: (filters?: { rol?: string; [key: string]: any}): Promise<User[]> =>
+    fetchUsuarios: (filters?: { rol?: string; [key: string]: string | number | boolean | undefined }): Promise<User[]> => // Corregido any
         axiosInstance.get('/usuarios/lista/', { params: filters }).then(res => res.data),
+    fetchEstudiantes: (filters?: { curso?: number; [key: string]: string | number | boolean | undefined }): Promise<User[]> => // Corregido any
+        axiosInstance.get('/usuarios/estudiantes/', { params: filters }).then(res => res.data),
     createUsuario: (data: Omit<User, 'id'>): Promise<User> =>
         axiosInstance.post('/usuarios/registro/', data).then(res => res.data),
     updateUsuario: (id: number, data: Partial<User>): Promise<User> =>
@@ -274,4 +274,4 @@ const api = {
         axiosInstance.delete(`/notificaciones/${id}/`).then(() => {}),
 };
 
-export default api;
+export default api; // Cambiado a exportación por defecto

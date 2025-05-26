@@ -99,17 +99,21 @@ const PrediccionRendimiento: React.FC = () => {
     }
   }, [cursosDisponibles, selectedCurso]);
 
-  const { data: estudiantes = [], isFetching: isFetchingEstudiantes } = useQuery({
+  const { data: estudiantes = [], isFetching: isFetchingEstudiantes } = useQuery<User[]>({
     queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
-      return api.fetchUsuarios({ rol: 'ESTUDIANTE', curso: selectedCurso });
+      if (!selectedCurso) return [];
+      return api.fetchEstudiantes({ curso: selectedCurso });
     },
     enabled: !!selectedCurso,
   });
 
-  const { data: predicciones = [], isFetching: isFetchingPredicciones } = useQuery({
+  const { data: predicciones = [], isFetching: isFetchingPredicciones } = useQuery<Prediccion[]>({
     queryKey: ['predicciones', selectedMateria],
-    queryFn: async () => api.fetchPredicciones({ materia: selectedMateria }),
+    queryFn: async () => {
+      if (!selectedMateria) return []; // Devuelve un array vacío si no hay materia seleccionada
+      return api.fetchPredicciones({ materia: selectedMateria });
+    },
     enabled: !!selectedMateria,
   });
 
@@ -614,3 +618,4 @@ const PrediccionRendimiento: React.FC = () => {
 };
 
 export default PrediccionRendimiento;
+
