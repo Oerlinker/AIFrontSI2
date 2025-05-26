@@ -1,52 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
+  Card, CardContent, CardDescription, CardHeader, CardTitle
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {Prediccion, Materia, Curso} from '@/types/academic';
+// import { Prediccion, Materia } from '@/types/academic';
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
 import {
-  BrainCircuit,
-  Loader2,
-  ArrowUpRight,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  Info
+  BrainCircuit, Loader2, ArrowUpRight, TrendingUp, AlertTriangle, CheckCircle, Info
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -64,147 +39,135 @@ interface PrediccionFormData {
   confianza?: number;
 }
 
+interface Materia {
+  id: number;
+  nombre: string;
+  codigo: string;
+  profesor?: number;
+}
+
+interface Prediccion {
+  id: number;
+  estudiante: number;
+  materia: number;
+  nivel_rendimiento?: string;
+  confianza: number;
+  fecha_prediccion: string;
+}
+
+interface Curso {
+  id: number;
+  nombre: string;
+  materias?: number[];
+}
+
 const PrediccionRendimiento: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedMateria, setSelectedMateria] = useState<number | null>(null);
   const [selectedEstudiante, setSelectedEstudiante] = useState<number | null>(null);
-  const [selectedCurso, setSelectedCurso] = useState<number | null>(null); // Nuevo estado para curso seleccionado SEGOVIA MIRA PUES TUS SELECT
-  const [cursosDisponibles, setCursosDisponibles] = useState<Curso[]>([]); // Estado para almacenar cursos disponibles
+  const [selectedCurso, setSelectedCurso] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
 
-  // Verificar si el usuario es administrador o profesor no se como manejas eso NAJAJJA asi que puse eso
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
 
-
-  const {
-    data: materias = [],
-    isLoading: isLoadingMaterias
-  } = useQuery({
+  const { data: materias = [], isFetching: isFetchingMaterias } = useQuery({
     queryKey: ['materias-profesor'],
     queryFn: async () => {
-      if (isProfesor) {
-        // Filtrar materias por profesor
-        const allMaterias = await api.fetchMaterias();
-        return allMaterias.filter((materia: Materia) => materia.profesor === user?.id);
-      } else {
-//trucazo
-        return api.fetchMaterias();
-      }
-    }
+      const allMaterias = await api.fetchMaterias();
+      return isProfesor ? allMaterias.filter((m: Materia) => m.profesor === user?.id) : allMaterias;
+    },
+    // keepPreviousData: true,
   });
 
-  // Consulta para obtener estudiantes basados en el curso de la materia seleccionada
-  const {
-    data: estudiantes = [],
-    isLoading: isLoadingEstudiantes,
-    refetch: refetchEstudiantes
-  } = useQuery({
+  const { data: cursos = [], isFetching: isFetchingCursos } = useQuery({
+    queryKey: ['cursos'],
+    queryFn: api.fetchCursos,
+  });
+
+  const cursosDisponibles = useMemo(() => {
+    if (!selectedMateria) return [];
+    return cursos.filter((curso: Curso) => curso.materias?.includes(selectedMateria));
+  }, [selectedMateria, cursos]);
+
+  useEffect(() => {
+    if (cursosDisponibles.length > 0 && !selectedCurso) {
+      setSelectedCurso(cursosDisponibles[0].id);
+    }
+  }, [cursosDisponibles, selectedCurso]);
+
+  const { data: estudiantes = [], isFetching: isFetchingEstudiantes } = useQuery({
     queryKey: ['estudiantes', selectedCurso],
     queryFn: async () => {
-      const params: { role: string; curso?: number } = { role: 'ESTUDIANTE' };
-
-      // Si hay un curso asociado, filtrar estudiantes por ese curso
-      if (selectedCurso) {
-        params.curso = selectedCurso;
-      }
-
-      const response = await api.fetchUsuarios(params);
-      return response;
+      return api.fetchUsuarios({ role: 'ESTUDIANTE', curso: selectedCurso });
     },
-    enabled: true 
+    enabled: !!selectedCurso,
   });
 
-  // Consulta para obtener todos los cursos
-  const {
-    data: cursos = [],
-    isLoading: isLoadingCursos
-  } = useQuery({
-    queryKey: ['cursos'],
-    queryFn: api.fetchCursos
-  });
-
-  // Efecto para manejar la selección de materia y filtrar cursos relacionados
-  useEffect(() => {
-    if (selectedMateria) {
-      // Filtrar los cursos que contienen la materia seleccionada
-      const cursosFiltrados = cursos.filter((curso: Curso) =>
-        curso.materias && curso.materias.includes(selectedMateria)
-      );
-
-      setCursosDisponibles(cursosFiltrados);
-
-      // Si no hay curso seleccionado o el curso actual no incluye esta materia
-      if (!selectedCurso || !cursosFiltrados.some(curso => curso.id === selectedCurso)) {
-        // Si hay cursos disponibles, seleccionamos el primero
-        if (cursosFiltrados.length > 0) {
-          setSelectedCurso(cursosFiltrados[0].id);
-        } else {
-          setSelectedCurso(null);
-        }
-      }
-    } else {
-      // Si no hay materia seleccionada, mostramos todos los cursos
-      setCursosDisponibles(cursos);
-      setSelectedCurso(null);
-    }
-  }, [selectedMateria, cursos, selectedCurso]);
-
-  // Consulta para obtener predicciones existentes
-  const {
-    data: predicciones = [],
-    isLoading: isLoadingPredicciones,
-    refetch: refetchPredicciones
-  } = useQuery({
+  const { data: predicciones = [], isFetching: isFetchingPredicciones } = useQuery({
     queryKey: ['predicciones', selectedMateria],
-    queryFn: async () => {
-      const filters: { materia?: number } = {};
-
-      if (selectedMateria) {
-        filters.materia = selectedMateria;
-      }
-
-      return api.fetchPredicciones(filters);
-    },
-    enabled: !!selectedMateria
+    queryFn: async () => api.fetchPredicciones({ materia: selectedMateria }),
+    enabled: !!selectedMateria,
   });
 
-  // Mutación para crear una nueva predicción
   const createPrediccionMutation = useMutation({
-    mutationFn: (data: PrediccionFormData) => {
-      return api.createPrediccion(data);
-    },
+    mutationFn: (data: PrediccionFormData) => api.createPrediccion(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['predicciones', selectedMateria] });
-      toast({
-        title: "Predicción generada",
-        description: "El modelo IA ha completado la predicción de rendimiento",
-      });
+      toast({ title: "Predicción generada", description: "El modelo IA ha completado la predicción." });
       setIsDialogOpen(false);
     },
-    onError: (error) => {
-      console.error("Error al generar predicción:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo generar la predicción. Por favor, intente nuevamente.",
-      });
-    }
+    onError: () => {
+      toast({ variant: "destructive", title: "Error", description: "No se pudo generar la predicción." });
+    },
   });
 
-  // Control de acceso - hacemos esto después de los hooks
-  if (!isAdmin && !isProfesor) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <h1 className="text-xl text-red-500">No tienes permisos para acceder a esta página</h1>
-      </div>
-    );
-  }
+  const isLoading = isFetchingMaterias || isFetchingCursos || isFetchingEstudiantes || isFetchingPredicciones;
 
-  // Manejador para abrir diálogo de nueva predicción
+  const estudiantesSinPrediccion = useMemo(() => {
+    const conPred = new Set(predicciones.map(p => p.estudiante));
+    return estudiantes.filter((e: User) => !conPred.has(e.id));
+  }, [estudiantes, predicciones]);
+
+  const getNivelRendimientoColor = (nivel: string | undefined) => {
+    switch (nivel?.toLowerCase()) {
+      case 'alto':
+        return 'bg-green-100 text-green-800';
+      case 'medio':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'bajo':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getNivelRendimientoIcon = (nivel: string | undefined) => {
+    switch (nivel?.toLowerCase()) {
+      case 'alto':
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
+      case 'medio':
+        return <Info className="h-4 w-4 text-yellow-600" />;
+      case 'bajo':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getEstudianteNombre = (id: number) => {
+    const estudiante = estudiantes.find(e => e.id === id);
+    return estudiante ? `${estudiante.first_name} ${estudiante.last_name}` : 'Estudiante no encontrado';
+  };
+
+  const getMateriaNombre = (id: number | null) => {
+    const materia = materias.find(m => m.id === id);
+    return materia ? materia.nombre : 'Materia no encontrada';
+  };
+
   const handleOpenCreateDialog = (estudiante?: User) => {
     if (estudiante) {
       setSelectedEstudiante(estudiante.id);
@@ -212,87 +175,27 @@ const PrediccionRendimiento: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  // Manejador para abrir diálogo de detalles
   const handleOpenDetailsDialog = (prediccion: Prediccion) => {
     setCurrentPrediccion(prediccion);
     setIsDetailsDialogOpen(true);
   };
 
-  // Manejador para generar predicción
-  const handleGenerarPrediccion = () => {
-    if (!selectedMateria || !selectedEstudiante) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Debes seleccionar una materia y un estudiante",
-      });
-      return;
-    }
+  const handleGenerarPrediccion = async () => {
+    if (!selectedMateria || !selectedEstudiante) return;
 
-    createPrediccionMutation.mutate({
+    await createPrediccionMutation.mutate({
       estudiante: selectedEstudiante,
       materia: selectedMateria
     });
   };
 
-  // Obtener el nombre del estudiante
-  const getEstudianteNombre = (id: number) => {
-    const estudiante = estudiantes.find((e: User) => e.id === id);
-    if (estudiante) {
-      return `${estudiante.first_name} ${estudiante.last_name}`;
-    }
-    return "Estudiante no encontrado";
-  };
-
-  // Obtener el nombre de la materia
-  const getMateriaNombre = (id: number) => {
-    const materia = materias.find((m: Materia) => m.id === id);
-    return materia ? materia.nombre : "Materia no encontrada";
-  };
-
-  const getNivelRendimientoColor = (nivel: string) => {
-    switch (nivel) {
-      case 'ALTO':
-        return 'bg-green-600';
-      case 'MEDIO':
-        return 'bg-yellow-500';
-      case 'BAJO':
-        return 'bg-red-600';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getNivelRendimientoIcon = (nivel: string) => {
-    switch (nivel) {
-      case 'ALTO':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'MEDIO':
-        return <Info className="h-5 w-5 text-yellow-600" />;
-      case 'BAJO':
-        return <AlertTriangle className="h-5 w-5 text-red-600" />;
-      default:
-        return <Info className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  // Verificar si está cargando
-  const isLoading = isLoadingMaterias || isLoadingEstudiantes ||
-                    (!!selectedMateria && isLoadingPredicciones);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-2">Cargando información...</p>
-      </div>
-    );
+  if (!isAdmin && !isProfesor) {
+    return <div className="flex justify-center items-center h-96"><h1 className="text-xl text-red-500">No tienes permisos para acceder a esta página</h1></div>;
   }
 
-  const estudiantesConPrediccion = predicciones.map((p: Prediccion) => p.estudiante);
-  const estudiantesSinPrediccion = estudiantes.filter((e: User) =>
-    !estudiantesConPrediccion.includes(e.id)
-  );
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-96"><Loader2 className="h-8 w-8 animate-spin" /><p className="ml-2">Cargando...</p></div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -428,7 +331,7 @@ const PrediccionRendimiento: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleOpenDetailsDialog(prediccion)}
                               >
-                                <ArrowUpRight className="h-3 w-3 mr-1" />z
+                                <ArrowUpRight className="h-3 w-3 mr-1" />
                                 Detalles
                               </Button>
                             </TableCell>
