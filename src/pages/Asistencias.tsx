@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/services/api';
+import api, { PaginatedResponse } from '@/services/api';
 import {
   Table,
   TableBody,
@@ -35,7 +35,7 @@ import { es } from "date-fns/locale";
 import { Materia, Asistencia, Curso } from '@/types/academic';
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
-import { CalendarCheck, Save, Loader2 } from 'lucide-react';
+import { CalendarCheck, Save, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Estudiante extends User {
@@ -50,6 +50,11 @@ const Asistencias: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [asistencias, setAsistencias] = useState<Record<number, boolean>>({});
   const [saving, setSaving] = useState(false);
+
+  // Estado para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
@@ -98,24 +103,49 @@ const Asistencias: React.FC = () => {
   });
 
   const {
-    data: asistenciasData = [],
+    data: asistenciasResponse,
     isLoading: isLoadingAsistencias,
     refetch: refetchAsistencias
   } = useQuery({
-    queryKey: ['asistencias', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
+    queryKey: ['asistencias', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null, currentPage],
     queryFn: async () => {
-      if (!selectedMateria || !selectedDate) return [];
+      if (!selectedMateria || !selectedDate || !selectedCurso) return { results: [], count: 0 };
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+      // Incluimos filtros optimizados de curso y fecha
       const response = await api.fetchAsistencias({
         materia: selectedMateria,
-        fecha: formattedDate
+        fecha: formattedDate,
+        curso: selectedCurso,
+        page: currentPage,
+        page_size: 100
       });
 
       return response;
     },
-    enabled: hasAccess && !!selectedMateria && !!selectedDate
+    enabled: hasAccess && !!selectedMateria && !!selectedDate && !!selectedCurso
   });
+
+  // Procesamos la respuesta paginada
+  const asistenciasData = useMemo(() => {
+    if (!asistenciasResponse) return [];
+
+    if ('results' in asistenciasResponse) {
+      // Es una respuesta paginada
+      const paginatedResponse = asistenciasResponse as PaginatedResponse<Asistencia>;
+
+      // Calculamos el total de páginas
+      const count = paginatedResponse.count;
+      setTotalPages(Math.ceil(count / 100));
+
+      return paginatedResponse.results;
+    }
+
+    // Es un array directo
+    setTotalPages(1);
+    return asistenciasResponse as Asistencia[];
+  }, [asistenciasResponse]);
 
   const registrarAsistenciasMutation = useMutation({
     mutationFn: async (asistenciasArray: Partial<Asistencia>[]) => {
@@ -129,7 +159,7 @@ const Asistencias: React.FC = () => {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({
-        queryKey: ['asistencias', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null]
+        queryKey: ['asistencias', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null]
       });
 
       if (result.errores && result.errores.length > 0) {
@@ -195,9 +225,11 @@ const Asistencias: React.FC = () => {
   }, [asistenciasData, estudiantes, hasAccess, asistencias]);
 
   useEffect(() => {
+    // Reset de valores al cambiar materia o fecha
     setSelectedCurso(null);
     setAsistencias({});
-  }, [selectedMateria]);
+    setCurrentPage(1); // Resetear la paginación
+  }, [selectedMateria, selectedDate]);
 
   useEffect(() => {
     if (cursosDisponibles.length > 0) {
@@ -207,7 +239,12 @@ const Asistencias: React.FC = () => {
     } else {
       setSelectedCurso(null);
     }
-  }, [cursosDisponibles]);
+
+    // Reset de paginación al cambiar el curso
+    if (selectedCurso) {
+      setCurrentPage(1);
+    }
+  }, [cursosDisponibles, selectedCurso]);
 
   const handleToggleAsistencia = (estudianteId: number) => {
     setAsistencias(prev => ({
@@ -237,6 +274,12 @@ const Asistencias: React.FC = () => {
     }));
 
     registrarAsistenciasMutation.mutate(asistenciasArray);
+  };
+
+  // Manejador para cambio de página
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
   };
 
   const isLoading = isLoadingMaterias || isLoadingEstudiantes || isLoadingCursos;
@@ -355,6 +398,11 @@ const Asistencias: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="rounded-md border relative">
+              {isLoadingData && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-academic-purple"/>
+                </div>
+              )}
               <Table>
                 <TableCaption>
                   Lista de estudiantes para registrar asistencia
@@ -399,10 +447,35 @@ const Asistencias: React.FC = () => {
               </Table>
             </div>
 
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoadingData}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span>
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || isLoadingData}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
             <div className="mt-6 flex justify-end">
               <Button
                 onClick={handleSaveAsistencias}
-                disabled={saving}
+                disabled={saving || isLoadingData}
               >
                 {saving ? (
                   <>

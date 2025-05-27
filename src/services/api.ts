@@ -214,8 +214,15 @@ const api = {
         axiosInstance.delete(`/notas/calificaciones/{id}/`).then(() => {}),
 
     // Asistencias
-    fetchAsistencias: (filters?: FilterParams): Promise<Asistencia[]> =>
-        axiosInstance.get('/asistencias/', { params: filters }).then(res => res.data),
+    fetchAsistencias: (filters?: FilterParams): Promise<PaginatedResponse<Asistencia> | Asistencia[]> =>
+        axiosInstance.get('/asistencias/', { params: filters }).then(res => {
+
+            if (res.data && 'results' in res.data) {
+                return res.data as PaginatedResponse<Asistencia>;
+            }
+
+            return res.data as Asistencia[];
+        }),
     getAsistenciaById: (id: number): Promise<Asistencia> =>
         axiosInstance.get(`/asistencias/${id}/`).then(res => res.data),
     recordAsistencia: (data: Omit<Asistencia, 'id'>): Promise<Asistencia> =>
