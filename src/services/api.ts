@@ -11,7 +11,9 @@ import {
     DashboardStats,
     Periodo,
     EstudianteDashboard,
-    ComparativoRendimiento
+    ComparativoRendimiento,
+    EstadisticasMateria,
+    ReporteTrimestral
 } from '@/types/academic';
 
 export type FilterParams = {
@@ -202,25 +204,42 @@ const api = {
         axiosInstance.delete(`/notas/periodos/${id}/`).then(() => {}),
 
     // Notas (anteriormente llamado Calificaciones)
-    fetchNotas: (filters?: FilterParams): Promise<Nota[]> =>
-        axiosInstance.get('/notas/calificaciones/', { params: filters }).then(res => res.data),
+    fetchNotas: (filters?: FilterParams): Promise<PaginatedResponse<Nota> | Nota[]> =>
+        axiosInstance.get('/notas/calificaciones/', { params: filters }).then(res => {
+            // Comprobar si es una respuesta paginada o un array directo
+            if (res.data && 'results' in res.data) {
+                return res.data as PaginatedResponse<Nota>;
+            }
+            return res.data as Nota[];
+        }),
     getNotaById: (id: number): Promise<Nota> =>
-        axiosInstance.get(`/notas/calificaciones/{id}/`).then(res => res.data),
+        axiosInstance.get(`/notas/calificaciones/${id}/`).then(res => res.data),
     createNota: (data: Omit<Nota, 'id' | 'estudiante_detail' | 'materia_detail' | 'periodo_detail' | 'ser_total' | 'decidir_total' | 'nota_total' | 'aprobado' | 'fecha_registro' | 'ultima_modificacion'>): Promise<Nota> =>
         axiosInstance.post('/notas/calificaciones/', data).then(res => res.data),
     updateNota: (id: number, data: Partial<Nota>): Promise<Nota> =>
-        axiosInstance.put(`/notas/calificaciones/{id}/`, data).then(res => res.data),
+        axiosInstance.put(`/notas/calificaciones/${id}/`, data).then(res => res.data),
     deleteNota: (id: number): Promise<void> =>
-        axiosInstance.delete(`/notas/calificaciones/{id}/`).then(() => {}),
+        axiosInstance.delete(`/notas/calificaciones/${id}/`).then(() => {}),
+
+    // Nuevos endpoints para estadísticas y reportes (usuarios administrativos)
+    fetchEstadisticasMateria: (materia: number, periodo?: number): Promise<EstadisticasMateria> =>
+        axiosInstance.get('/notas/estadisticas_materia/', {
+            params: { materia, periodo }
+        }).then(res => res.data),
+
+    fetchReporteTrimestral: (curso: number, periodo: number): Promise<ReporteTrimestral> =>
+        axiosInstance.get('/notas/reporte_trimestral/', {
+            params: { curso, periodo }
+        }).then(res => res.data),
 
     // Asistencias
     fetchAsistencias: (filters?: FilterParams): Promise<PaginatedResponse<Asistencia> | Asistencia[]> =>
         axiosInstance.get('/asistencias/', { params: filters }).then(res => {
-
+            // Si la respuesta tiene una estructura paginada (con count, next, previous, results)
             if (res.data && 'results' in res.data) {
                 return res.data as PaginatedResponse<Asistencia>;
             }
-
+            // Si la respuesta es un array directo
             return res.data as Asistencia[];
         }),
     getAsistenciaById: (id: number): Promise<Asistencia> =>

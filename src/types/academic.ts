@@ -177,3 +177,72 @@ export interface ComparativoRendimiento {
     cantidad: number;
   }[];
 }
+
+export interface EstadisticasMateria {
+  materia_id: number;
+  materia_nombre: string;
+  periodo: string;
+  promedios: {
+    ser: number;
+    saber: number;
+    hacer: number;
+    decidir: number;
+    autoevaluacion_ser: number;
+    autoevaluacion_decidir: number;
+  };
+  promedio_total: number;
+  total_estudiantes: number;
+  aprobados: number;
+  reprobados: number;
+  porcentaje_aprobacion: number;
+  mejor_nota: number;
+  peor_nota: number;
+  estudiantes: {
+    estudiante_id: number;
+    nombre: string;
+    ser: number;
+    saber: number;
+    hacer: number;
+    decidir: number;
+    nota_total: number;
+    aprobado: boolean;
+  }[];
+}
+
+export interface ReporteTrimestral {
+  curso_id: number;
+  periodo: {
+    id: number;
+    nombre: string;
+    trimestre: string;
+    año_academico: string;
+  };
+  estadisticas_curso: {
+    promedio_general: number;
+    total_materias: number;
+    materias_aprobadas: number;
+    materias_reprobadas: number;
+    porcentaje_aprobacion: number;
+  };
+  estudiantes: {
+    estudiante_id: number;
+    nombre: string;
+    username: string;
+    materias: {
+      materia_id: number;
+      nombre: string;
+      ser: number;
+      saber: number;
+      hacer: number;
+      decidir: number;
+      nota_total: number;
+      aprobado: boolean;
+    }[];
+    promedio_general: number;
+    aprobadas: number;
+    reprobadas: number;
+    total_materias: number;
+  }[];
+  total_estudiantes: number;
+}
+
