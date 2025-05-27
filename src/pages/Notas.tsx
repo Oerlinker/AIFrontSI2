@@ -549,214 +549,36 @@ const Notas: React.FC = () => {
         <BookOpen className="h-8 w-8 text-academic-blue" />
       </div>
 
-      {isAdmin && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="notas">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Registro de Notas
-            </TabsTrigger>
-            <TabsTrigger value="estadisticas">
-              <BarChart className="h-4 w-4 mr-2" />
-              Estadísticas de Materia
-            </TabsTrigger>
-            <TabsTrigger value="reportes">
-              <FileText className="h-4 w-4 mr-2" />
-              Reportes Trimestrales
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className={isAdmin ? "grid w-full grid-cols-3" : "grid w-full grid-cols-1"}>
+          <TabsTrigger value="notas">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Registro de Notas
+          </TabsTrigger>
+          {isAdmin && (
+            <>
+              <TabsTrigger value="estadisticas">
+                <BarChart className="h-4 w-4 mr-2" />
+                Estadísticas de Materia
+              </TabsTrigger>
+              <TabsTrigger value="reportes">
+                <FileText className="h-4 w-4 mr-2" />
+                Reportes Trimestrales
+              </TabsTrigger>
+            </>
+          )}
+        </TabsList>
 
-      <TabsContent value="notas" className="mt-4 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Seleccionar Materia, Curso y Periodo</CardTitle>
-            <CardDescription>Selecciona la materia, el curso y el periodo para registrar o consultar notas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="materia">Materia</Label>
-                <Select
-                  onValueChange={(value) => setSelectedMateria(parseInt(value))}
-                  value={selectedMateria?.toString() || ""}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar Materia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materias.map((materia: Materia) => (
-                      <SelectItem key={materia.id} value={materia.id.toString()}>
-                        {materia.nombre} ({materia.codigo})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="curso">Curso</Label>
-                <Select
-                  onValueChange={(value) => setSelectedCurso(parseInt(value))}
-                  value={selectedCurso?.toString() || ""}
-                  disabled={!selectedMateria || cursosDisponibles.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={!selectedMateria ? "Seleccione materia primero" : (cursosDisponibles.length === 0 ? "No hay cursos" : "Seleccionar Curso")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cursosDisponibles.map((curso) => (
-                      <SelectItem key={curso.id} value={curso.id.toString()}>
-                        {curso.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="periodo">Periodo</Label>
-                <Select
-                  onValueChange={(value) => setSelectedPeriodo(parseInt(value))}
-                  value={selectedPeriodo?.toString() || ""}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar Periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periodos.map((periodo: Periodo) => (
-                      <SelectItem key={periodo.id} value={periodo.id.toString()}>
-                        {periodo.trimestre_display} - {periodo.año_academico}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {selectedMateria && selectedCurso && selectedPeriodo ? (
+        <TabsContent value="notas" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>
-                Calificaciones: {getMateriaNombre(selectedMateria)} - {getCursoNombre(selectedCurso)} - {getPeriodoNombre(selectedPeriodo)}
-              </CardTitle>
-              <CardDescription>
-                Registro de calificaciones para el periodo seleccionado
-              </CardDescription>
+              <CardTitle>Seleccionar Materia, Curso y Periodo</CardTitle>
+              <CardDescription>Selecciona la materia, el curso y el periodo para registrar o consultar notas</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableCaption>
-                    Lista de estudiantes y sus calificaciones para {getMateriaNombre(selectedMateria)}
-                  </TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Estudiante</TableHead>
-                      <TableHead className="text-center">
-                        Saber Ser<br/><span className="text-xs">(máx. 10)</span>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        Saber Decidir<br/><span className="text-xs">(máx. 10)</span>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        Saber Hacer<br/><span className="text-xs">(máx. 35)</span>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        Saber Conocer<br/><span className="text-xs">(máx. 35)</span>
-                      </TableHead>
-                      <TableHead className="text-center">Nota Total</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {estudiantes.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-4">
-                          No hay estudiantes registrados en este curso
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      estudiantes.map((estudiante: User) => {
-                        const notaExistente = findNotaForEstudiante(estudiante.id);
-                        const notaTotal = notaExistente ? notaExistente.nota_total : null;
-                        const isApproved = notaExistente?.aprobado;
-
-                        return (
-                          <TableRow key={estudiante.id}>
-                            <TableCell className="font-medium">
-                              {estudiante.first_name} {estudiante.last_name}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {notaExistente ? notaExistente.ser_puntaje.toFixed(2) : "-"}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {notaExistente ? notaExistente.decidir_puntaje.toFixed(2) : "-"}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {notaExistente ? notaExistente.hacer_puntaje.toFixed(2) : "-"}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {notaExistente ? notaExistente.saber_puntaje.toFixed(2) : "-"}
-                            </TableCell>
-                            <TableCell className={`text-center font-bold ${isApproved ? 'text-green-600' : 'text-red-600'}`}>
-                              {notaTotal !== null ? notaTotal.toFixed(2) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant={notaExistente ? "outline" : "default"}
-                                size="sm"
-                                onClick={() => handleOpenDialog(estudiante, notaExistente)}
-                              >
-                                {notaExistente ? (
-                                  <>
-                                    <Pencil className="h-3 w-3 mr-1" /> Editar
-                                  </>
-                                ) : (
-                                  <>
-                                    <Save className="h-3 w-3 mr-1" /> Registrar
-                                  </>
-                                )}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleExportNotas}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Notas
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p>Selecciona una materia, un curso y un periodo para ver y registrar calificaciones</p>
-          </div>
-        )}
-      </TabsContent>
-
-      {isAdmin && (
-        <TabsContent value="estadisticas" className="mt-4 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estadísticas de Materia</CardTitle>
-              <CardDescription>Ver estadísticas detalladas por materia y periodo</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="estadistica-materia">Materia</Label>
+                  <Label htmlFor="materia">Materia</Label>
                   <Select
                     onValueChange={(value) => setSelectedMateria(parseInt(value))}
                     value={selectedMateria?.toString() || ""}
@@ -773,179 +595,21 @@ const Notas: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="estadistica-periodo">Periodo</Label>
-                  <Select
-                    onValueChange={(value) => setSelectedPeriodo(parseInt(value))}
-                    value={selectedPeriodo?.toString() || ""}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar Periodo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodos.map((periodo: Periodo) => (
-                        <SelectItem key={periodo.id} value={periodo.id.toString()}>
-                          {periodo.trimestre_display} - {periodo.año_academico}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {estadisticasMateria ? (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Promedio Total</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-4xl font-bold text-academic-blue">
-                          {estadisticasMateria.promedio_total.toFixed(2)}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Estudiantes</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-4xl font-bold">{estadisticasMateria.total_estudiantes}</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Aprobados</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <p className="text-4xl font-bold text-green-600">{estadisticasMateria.aprobados}</p>
-                        <Progress value={estadisticasMateria.porcentaje_aprobacion} className="h-2" />
-                        <p className="text-sm text-muted-foreground">
-                          {estadisticasMateria.porcentaje_aprobacion}% de aprobación
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Mejores notas</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-1">
-                        <div className="flex justify-between">
-                          <span>Mayor:</span>
-                          <span className="font-bold text-green-600">{estadisticasMateria.mejor_nota.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Menor:</span>
-                          <span className="font-bold text-red-600">{estadisticasMateria.peor_nota.toFixed(2)}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Promedios por dimensión</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-sm">Ser ({estadisticasMateria.promedios.ser.toFixed(2)}/10)</label>
-                        <Progress value={(estadisticasMateria.promedios.ser / 10) * 100} className="h-2" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm">Saber ({estadisticasMateria.promedios.saber.toFixed(2)}/35)</label>
-                        <Progress value={(estadisticasMateria.promedios.saber / 35) * 100} className="h-2" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm">Hacer ({estadisticasMateria.promedios.hacer.toFixed(2)}/35)</label>
-                        <Progress value={(estadisticasMateria.promedios.hacer / 35) * 100} className="h-2" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm">Decidir ({estadisticasMateria.promedios.decidir.toFixed(2)}/10)</label>
-                        <Progress value={(estadisticasMateria.promedios.decidir / 10) * 100} className="h-2" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm">Auto. Ser ({estadisticasMateria.promedios.autoevaluacion_ser.toFixed(2)}/5)</label>
-                        <Progress value={(estadisticasMateria.promedios.autoevaluacion_ser / 5) * 100} className="h-2" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm">Auto. Decidir ({estadisticasMateria.promedios.autoevaluacion_decidir.toFixed(2)}/5)</label>
-                        <Progress value={(estadisticasMateria.promedios.autoevaluacion_decidir / 5) * 100} className="h-2" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Notas por estudiante</h3>
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Estudiante</TableHead>
-                            <TableHead className="text-center">Ser</TableHead>
-                            <TableHead className="text-center">Saber</TableHead>
-                            <TableHead className="text-center">Hacer</TableHead>
-                            <TableHead className="text-center">Decidir</TableHead>
-                            <TableHead className="text-center">Nota Total</TableHead>
-                            <TableHead className="text-center">Estado</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {estadisticasMateria.estudiantes.map((est) => (
-                            <TableRow key={est.estudiante_id}>
-                              <TableCell className="font-medium">{est.nombre}</TableCell>
-                              <TableCell className="text-center">{est.ser.toFixed(2)}</TableCell>
-                              <TableCell className="text-center">{est.saber.toFixed(2)}</TableCell>
-                              <TableCell className="text-center">{est.hacer.toFixed(2)}</TableCell>
-                              <TableCell className="text-center">{est.decidir.toFixed(2)}</TableCell>
-                              <TableCell className="text-center font-bold">{est.nota_total.toFixed(2)}</TableCell>
-                              <TableCell className="text-center">
-                                <span className={`badge ${est.aprobado ? 'bg-green-600' : 'bg-red-600'}`}>
-                                  {est.aprobado ? 'Aprobado' : 'Reprobado'}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-60">
-                  <BarChart className="h-16 w-16 text-gray-300 mb-4" />
-                  <p className="text-gray-500">Selecciona una materia y un periodo para ver estadísticas detalladas</p>
-                </div>
-              )}
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleExportEstadisticas}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Estadísticas
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      )}
-
-      {isAdmin && (
-        <TabsContent value="reportes" className="mt-4 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reportes Trimestrales</CardTitle>
-              <CardDescription>Ver informes trimestrales por curso</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="reporte-curso">Curso</Label>
+                  <Label htmlFor="curso">Curso</Label>
                   <Select
                     onValueChange={(value) => setSelectedCurso(parseInt(value))}
                     value={selectedCurso?.toString() || ""}
+                    disabled={!selectedMateria || cursosDisponibles.length === 0}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar Curso" />
+                      <SelectValue
+                        placeholder={!selectedMateria ? "Seleccione materia primero" : (cursosDisponibles.length === 0 ? "No hay cursos" : "Seleccionar Curso")}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {cursos.map((curso) => (
+                      {cursosDisponibles.map((curso) => (
                         <SelectItem key={curso.id} value={curso.id.toString()}>
                           {curso.nombre}
                         </SelectItem>
@@ -953,8 +617,9 @@ const Notas: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="reporte-periodo">Periodo</Label>
+                  <Label htmlFor="periodo">Periodo</Label>
                   <Select
                     onValueChange={(value) => setSelectedPeriodo(parseInt(value))}
                     value={selectedPeriodo?.toString() || ""}
@@ -972,130 +637,467 @@ const Notas: React.FC = () => {
                   </Select>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {reporteTrimestral ? (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Resumen del curso</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {selectedMateria && selectedCurso && selectedPeriodo ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Calificaciones: {getMateriaNombre(selectedMateria)} - {getCursoNombre(selectedCurso)} - {getPeriodoNombre(selectedPeriodo)}
+                </CardTitle>
+                <CardDescription>
+                  Registro de calificaciones para el periodo seleccionado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableCaption>
+                      Lista de estudiantes y sus calificaciones para {getMateriaNombre(selectedMateria)}
+                    </TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Estudiante</TableHead>
+                        <TableHead className="text-center">
+                          Saber Ser<br/><span className="text-xs">(máx. 10)</span>
+                        </TableHead>
+                        <TableHead className="text-center">
+                          Saber Decidir<br/><span className="text-xs">(máx. 10)</span>
+                        </TableHead>
+                        <TableHead className="text-center">
+                          Saber Hacer<br/><span className="text-xs">(máx. 35)</span>
+                        </TableHead>
+                        <TableHead className="text-center">
+                          Saber Conocer<br/><span className="text-xs">(máx. 35)</span>
+                        </TableHead>
+                        <TableHead className="text-center">Nota Total</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {estudiantes.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-4">
+                            No hay estudiantes registrados en este curso
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        estudiantes.map((estudiante: User) => {
+                          const notaExistente = findNotaForEstudiante(estudiante.id);
+                          const notaTotal = notaExistente ? notaExistente.nota_total : null;
+                          const isApproved = notaExistente?.aprobado;
+
+                          return (
+                            <TableRow key={estudiante.id}>
+                              <TableCell className="font-medium">
+                                {estudiante.first_name} {estudiante.last_name}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {notaExistente ? notaExistente.ser_puntaje.toFixed(2) : "-"}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {notaExistente ? notaExistente.decidir_puntaje.toFixed(2) : "-"}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {notaExistente ? notaExistente.hacer_puntaje.toFixed(2) : "-"}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {notaExistente ? notaExistente.saber_puntaje.toFixed(2) : "-"}
+                              </TableCell>
+                              <TableCell className={`text-center font-bold ${isApproved ? 'text-green-600' : 'text-red-600'}`}>
+                                {notaTotal !== null ? notaTotal.toFixed(2) : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant={notaExistente ? "outline" : "default"}
+                                  size="sm"
+                                  onClick={() => handleOpenDialog(estudiante, notaExistente)}
+                                >
+                                  {notaExistente ? (
+                                    <>
+                                      <Pencil className="h-3 w-3 mr-1" /> Editar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="h-3 w-3 mr-1" /> Registrar
+                                    </>
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleExportNotas}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar Notas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>Selecciona una materia, un curso y un periodo para ver y registrar calificaciones</p>
+            </div>
+          )}
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="estadisticas" className="mt-4 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estadísticas de Materia</CardTitle>
+                <CardDescription>Ver estadísticas detalladas por materia y periodo</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="estadistica-materia">Materia</Label>
+                    <Select
+                      onValueChange={(value) => setSelectedMateria(parseInt(value))}
+                      value={selectedMateria?.toString() || ""}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar Materia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {materias.map((materia: Materia) => (
+                          <SelectItem key={materia.id} value={materia.id.toString()}>
+                            {materia.nombre} ({materia.codigo})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="estadistica-periodo">Periodo</Label>
+                    <Select
+                      onValueChange={(value) => setSelectedPeriodo(parseInt(value))}
+                      value={selectedPeriodo?.toString() || ""}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar Periodo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodos.map((periodo: Periodo) => (
+                          <SelectItem key={periodo.id} value={periodo.id.toString()}>
+                            {periodo.trimestre_display} - {periodo.año_academico}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {estadisticasMateria ? (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Promedio General</CardTitle>
+                          <CardTitle className="text-lg">Promedio Total</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <p className="text-4xl font-bold text-academic-blue">
-                            {reporteTrimestral.estadisticas_curso.promedio_general.toFixed(2)}
+                            {estadisticasMateria.promedio_total.toFixed(2)}
                           </p>
                         </CardContent>
                       </Card>
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Total Estudiantes</CardTitle>
+                          <CardTitle className="text-lg">Estudiantes</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-4xl font-bold">{reporteTrimestral.total_estudiantes}</p>
+                          <p className="text-4xl font-bold">{estadisticasMateria.total_estudiantes}</p>
                         </CardContent>
                       </Card>
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Materias Aprobadas</CardTitle>
+                          <CardTitle className="text-lg">Aprobados</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                          <p className="text-4xl font-bold text-green-600">
-                            {reporteTrimestral.estadisticas_curso.materias_aprobadas} / {reporteTrimestral.estadisticas_curso.total_materias}
-                          </p>
-                          <Progress value={reporteTrimestral.estadisticas_curso.porcentaje_aprobacion} className="h-2" />
+                          <p className="text-4xl font-bold text-green-600">{estadisticasMateria.aprobados}</p>
+                          <Progress value={estadisticasMateria.porcentaje_aprobacion} className="h-2" />
                           <p className="text-sm text-muted-foreground">
-                            {reporteTrimestral.estadisticas_curso.porcentaje_aprobacion.toFixed(2)}% de aprobación
+                            {estadisticasMateria.porcentaje_aprobacion}% de aprobación
                           </p>
                         </CardContent>
                       </Card>
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Materias Reprobadas</CardTitle>
+                          <CardTitle className="text-lg">Mejores notas</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                          <p className="text-4xl font-bold text-red-600">
-                            {reporteTrimestral.estadisticas_curso.materias_reprobadas}
-                          </p>
+                        <CardContent className="space-y-1">
+                          <div className="flex justify-between">
+                            <span>Mayor:</span>
+                            <span className="font-bold text-green-600">{estadisticasMateria.mejor_nota.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Menor:</span>
+                            <span className="font-bold text-red-600">{estadisticasMateria.peor_nota.toFixed(2)}</span>
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
 
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Rendimiento de estudiantes</h3>
-                    <div className="space-y-4">
-                      {reporteTrimestral.estudiantes.map((estudiante) => (
-                        <Card key={estudiante.estudiante_id}>
-                          <CardHeader>
-                            <CardTitle>{estudiante.nombre}</CardTitle>
-                            <CardDescription>
-                              Usuario: {estudiante.username} | Promedio: {estudiante.promedio_general.toFixed(2)}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="rounded-md border">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Materia</TableHead>
-                                    <TableHead className="text-center">Ser</TableHead>
-                                    <TableHead className="text-center">Saber</TableHead>
-                                    <TableHead className="text-center">Hacer</TableHead>
-                                    <TableHead className="text-center">Decidir</TableHead>
-                                    <TableHead className="text-center">Nota Total</TableHead>
-                                    <TableHead className="text-center">Estado</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {estudiante.materias.map((materia) => (
-                                    <TableRow key={materia.materia_id}>
-                                      <TableCell>{materia.nombre}</TableCell>
-                                      <TableCell className="text-center">{materia.ser.toFixed(2)}</TableCell>
-                                      <TableCell className="text-center">{materia.saber.toFixed(2)}</TableCell>
-                                      <TableCell className="text-center">{materia.hacer.toFixed(2)}</TableCell>
-                                      <TableCell className="text-center">{materia.decidir.toFixed(2)}</TableCell>
-                                      <TableCell className="text-center font-bold">{materia.nota_total.toFixed(2)}</TableCell>
-                                      <TableCell className="text-center">
-                                        <span className={`badge ${materia.aprobado ? 'bg-green-600' : 'bg-red-600'}`}>
-                                          {materia.aprobado ? 'Aprobado' : 'Reprobado'}
-                                        </span>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </CardContent>
-                          <CardFooter>
-                            <div className="flex justify-between w-full text-sm">
-                              <span>Materias aprobadas: <strong className="text-green-600">{estudiante.aprobadas}</strong></span>
-                              <span>Materias reprobadas: <strong className="text-red-600">{estudiante.reprobadas}</strong></span>
-                              <span>Total materias: <strong>{estudiante.total_materias}</strong></span>
-                            </div>
-                          </CardFooter>
-                        </Card>
-                      ))}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Promedios por dimensión</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-sm">Ser ({estadisticasMateria.promedios.ser.toFixed(2)}/10)</label>
+                          <Progress value={(estadisticasMateria.promedios.ser / 10) * 100} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm">Saber ({estadisticasMateria.promedios.saber.toFixed(2)}/35)</label>
+                          <Progress value={(estadisticasMateria.promedios.saber / 35) * 100} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm">Hacer ({estadisticasMateria.promedios.hacer.toFixed(2)}/35)</label>
+                          <Progress value={(estadisticasMateria.promedios.hacer / 35) * 100} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm">Decidir ({estadisticasMateria.promedios.decidir.toFixed(2)}/10)</label>
+                          <Progress value={(estadisticasMateria.promedios.decidir / 10) * 100} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm">Auto. Ser ({estadisticasMateria.promedios.autoevaluacion_ser.toFixed(2)}/5)</label>
+                          <Progress value={(estadisticasMateria.promedios.autoevaluacion_ser / 5) * 100} className="h-2" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm">Auto. Decidir ({estadisticasMateria.promedios.autoevaluacion_decidir.toFixed(2)}/5)</label>
+                          <Progress value={(estadisticasMateria.promedios.autoevaluacion_decidir / 5) * 100} className="h-2" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Notas por estudiante</h3>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Estudiante</TableHead>
+                              <TableHead className="text-center">Ser</TableHead>
+                              <TableHead className="text-center">Saber</TableHead>
+                              <TableHead className="text-center">Hacer</TableHead>
+                              <TableHead className="text-center">Decidir</TableHead>
+                              <TableHead className="text-center">Nota Total</TableHead>
+                              <TableHead className="text-center">Estado</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {estadisticasMateria.estudiantes.map((est) => (
+                              <TableRow key={est.estudiante_id}>
+                                <TableCell className="font-medium">{est.nombre}</TableCell>
+                                <TableCell className="text-center">{est.ser.toFixed(2)}</TableCell>
+                                <TableCell className="text-center">{est.saber.toFixed(2)}</TableCell>
+                                <TableCell className="text-center">{est.hacer.toFixed(2)}</TableCell>
+                                <TableCell className="text-center">{est.decidir.toFixed(2)}</TableCell>
+                                <TableCell className="text-center font-bold">{est.nota_total.toFixed(2)}</TableCell>
+                                <TableCell className="text-center">
+                                  <span className={`badge ${est.aprobado ? 'bg-green-600' : 'bg-red-600'}`}>
+                                    {est.aprobado ? 'Aprobado' : 'Reprobado'}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-60">
+                    <BarChart className="h-16 w-16 text-gray-300 mb-4" />
+                    <p className="text-gray-500">Selecciona una materia y un periodo para ver estadísticas detalladas</p>
+                  </div>
+                )}
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleExportEstadisticas}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar Estadísticas
+                  </Button>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-60">
-                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
-                  <p className="text-gray-500">Selecciona un curso y un periodo para ver el reporte trimestral</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="reportes" className="mt-4 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reportes Trimestrales</CardTitle>
+                <CardDescription>Ver informes trimestrales por curso</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="reporte-curso">Curso</Label>
+                    <Select
+                      onValueChange={(value) => setSelectedCurso(parseInt(value))}
+                      value={selectedCurso?.toString() || ""}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar Curso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cursos.map((curso) => (
+                          <SelectItem key={curso.id} value={curso.id.toString()}>
+                            {curso.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reporte-periodo">Periodo</Label>
+                    <Select
+                      onValueChange={(value) => setSelectedPeriodo(parseInt(value))}
+                      value={selectedPeriodo?.toString() || ""}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar Periodo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {periodos.map((periodo: Periodo) => (
+                          <SelectItem key={periodo.id} value={periodo.id.toString()}>
+                            {periodo.trimestre_display} - {periodo.año_academico}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              )}
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleExportReporte}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Reporte
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      )}
+
+                {reporteTrimestral ? (
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Resumen del curso</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Promedio General</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-4xl font-bold text-academic-blue">
+                              {reporteTrimestral.estadisticas_curso.promedio_general.toFixed(2)}
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Total Estudiantes</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-4xl font-bold">{reporteTrimestral.total_estudiantes}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Materias Aprobadas</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            <p className="text-4xl font-bold text-green-600">
+                              {reporteTrimestral.estadisticas_curso.materias_aprobadas} / {reporteTrimestral.estadisticas_curso.total_materias}
+                            </p>
+                            <Progress value={reporteTrimestral.estadisticas_curso.porcentaje_aprobacion} className="h-2" />
+                            <p className="text-sm text-muted-foreground">
+                              {reporteTrimestral.estadisticas_curso.porcentaje_aprobacion.toFixed(2)}% de aprobación
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Materias Reprobadas</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-4xl font-bold text-red-600">
+                              {reporteTrimestral.estadisticas_curso.materias_reprobadas}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Rendimiento de estudiantes</h3>
+                      <div className="space-y-4">
+                        {reporteTrimestral.estudiantes.map((estudiante) => (
+                          <Card key={estudiante.estudiante_id}>
+                            <CardHeader>
+                              <CardTitle>{estudiante.nombre}</CardTitle>
+                              <CardDescription>
+                                Usuario: {estudiante.username} | Promedio: {estudiante.promedio_general.toFixed(2)}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="rounded-md border">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Materia</TableHead>
+                                      <TableHead className="text-center">Ser</TableHead>
+                                      <TableHead className="text-center">Saber</TableHead>
+                                      <TableHead className="text-center">Hacer</TableHead>
+                                      <TableHead className="text-center">Decidir</TableHead>
+                                      <TableHead className="text-center">Nota Total</TableHead>
+                                      <TableHead className="text-center">Estado</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {estudiante.materias.map((materia) => (
+                                      <TableRow key={materia.materia_id}>
+                                        <TableCell>{materia.nombre}</TableCell>
+                                        <TableCell className="text-center">{materia.ser.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">{materia.saber.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">{materia.hacer.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">{materia.decidir.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center font-bold">{materia.nota_total.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">
+                                          <span className={`badge ${materia.aprobado ? 'bg-green-600' : 'bg-red-600'}`}>
+                                            {materia.aprobado ? 'Aprobado' : 'Reprobado'}
+                                          </span>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </CardContent>
+                            <CardFooter>
+                              <div className="flex justify-between w-full text-sm">
+                                <span>Materias aprobadas: <strong className="text-green-600">{estudiante.aprobadas}</strong></span>
+                                <span>Materias reprobadas: <strong className="text-red-600">{estudiante.reprobadas}</strong></span>
+                                <span>Total materias: <strong>{estudiante.total_materias}</strong></span>
+                              </div>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-60">
+                    <FileText className="h-16 w-16 text-gray-300 mb-4" />
+                    <p className="text-gray-500">Selecciona un curso y un periodo para ver el reporte trimestral</p>
+                  </div>
+                )}
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleExportReporte}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar Reporte
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
