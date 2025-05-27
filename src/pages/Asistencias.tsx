@@ -113,7 +113,7 @@ const Asistencias: React.FC = () => {
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-      // Incluimos filtros optimizados de curso y fecha
+
       const response = await api.fetchAsistencias({
         materia: selectedMateria,
         fecha: formattedDate,
@@ -127,22 +127,22 @@ const Asistencias: React.FC = () => {
     enabled: hasAccess && !!selectedMateria && !!selectedDate && !!selectedCurso
   });
 
-  // Procesamos la respuesta paginada
+
   const asistenciasData = useMemo(() => {
     if (!asistenciasResponse) return [];
 
     if ('results' in asistenciasResponse) {
-      // Es una respuesta paginada
+
       const paginatedResponse = asistenciasResponse as PaginatedResponse<Asistencia>;
 
-      // Calculamos el total de páginas
+
       const count = paginatedResponse.count;
       setTotalPages(Math.ceil(count / 100));
 
       return paginatedResponse.results;
     }
 
-    // Es un array directo
+
     setTotalPages(1);
     return asistenciasResponse as Asistencia[];
   }, [asistenciasResponse]);
@@ -190,39 +190,27 @@ const Asistencias: React.FC = () => {
   useEffect(() => {
     if (!hasAccess) return;
 
-    const shouldUpdateState = (newAsistencias: Record<number, boolean>) => {
-      if (Object.keys(asistencias).length === 0) return true;
-      if (Object.keys(asistencias).length !== Object.keys(newAsistencias).length) return true;
-
-      for (const id in newAsistencias) {
-        if (asistencias[parseInt(id)] !== newAsistencias[parseInt(id)]) {
-          return true;
-        }
-      }
-
-      return false;
-    };
 
     if (asistenciasData.length > 0) {
+      // Inicialización con datos del servidor
       const asistenciasMap: Record<number, boolean> = {};
       asistenciasData.forEach((asistencia: Asistencia) => {
         asistenciasMap[asistencia.estudiante] = asistencia.presente;
       });
 
-      if (shouldUpdateState(asistenciasMap)) {
+
+      if (Object.keys(asistencias).length === 0) {
         setAsistencias(asistenciasMap);
       }
-    } else if (estudiantes.length > 0) {
+    } else if (estudiantes.length > 0 && Object.keys(asistencias).length === 0) {
+
       const asistenciasMap: Record<number, boolean> = {};
       estudiantes.forEach((est: Estudiante) => {
-        asistenciasMap[est.id] = false;
+        asistenciasMap[est.id] = false; // Inicializar como ausente (false)
       });
-
-      if (shouldUpdateState(asistenciasMap)) {
-        setAsistencias(asistenciasMap);
-      }
+      setAsistencias(asistenciasMap);
     }
-  }, [asistenciasData, estudiantes, hasAccess, asistencias]);
+  }, [asistenciasData, estudiantes, hasAccess]);
 
   useEffect(() => {
     // Reset de valores al cambiar materia o fecha
@@ -240,17 +228,19 @@ const Asistencias: React.FC = () => {
       setSelectedCurso(null);
     }
 
-    // Reset de paginación al cambiar el curso
+
     if (selectedCurso) {
       setCurrentPage(1);
     }
   }, [cursosDisponibles, selectedCurso]);
 
   const handleToggleAsistencia = (estudianteId: number) => {
-    setAsistencias(prev => ({
-      ...prev,
-      [estudianteId]: !prev[estudianteId]
-    }));
+    console.log(`Cambiando estado de asistencia para estudiante ${estudianteId}: ${asistencias[estudianteId]} -> ${!asistencias[estudianteId]}`);
+    setAsistencias(prev => {
+      const newAsistencias = { ...prev };
+      newAsistencias[estudianteId] = !prev[estudianteId];
+      return newAsistencias;
+    });
   };
 
   const handleSaveAsistencias = async () => {
