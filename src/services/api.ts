@@ -223,12 +223,12 @@ const api = {
 
     // Nuevos endpoints para estadísticas y reportes (usuarios administrativos)
     fetchEstadisticasMateria: (materia: number, periodo?: number): Promise<EstadisticasMateria> =>
-        axiosInstance.get('/notas/estadisticas_materia/', {
+        axiosInstance.get('/notas/calificaciones/estadisticas_materia/', {
             params: { materia, periodo }
         }).then(res => res.data),
 
     fetchReporteTrimestral: (curso: number, periodo: number): Promise<ReporteTrimestral> =>
-        axiosInstance.get('/notas/reporte_trimestral/', {
+        axiosInstance.get('/notas/calificaciones/reporte_trimestral/', {
             params: { curso, periodo }
         }).then(res => res.data),
 
