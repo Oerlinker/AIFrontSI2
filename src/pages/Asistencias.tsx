@@ -185,7 +185,7 @@ const Asistencias: React.FC = () => {
     } else if (estudiantes.length > 0) {
       const asistenciasMap: Record<number, boolean> = {};
       estudiantes.forEach((est: Estudiante) => {
-        asistenciasMap[est.id] = false; // Inicializar como false para permitir marcar manualmente
+        asistenciasMap[est.id] = false;
       });
 
       if (shouldUpdateState(asistenciasMap)) {
@@ -250,15 +250,6 @@ const Asistencias: React.FC = () => {
       </div>
     );
   }
-
-  const LoadingOverlay = () => (
-    <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-md">
-      <div className="flex flex-col items-center">
-        <Loader2 className="h-8 w-8 animate-spin mb-2 text-academic-purple"/>
-        <p className="text-sm text-gray-600">Cargando asistencias...</p>
-      </div>
-    </div>
-  );
 
   if (!hasAccess) {
     return (
@@ -364,7 +355,6 @@ const Asistencias: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="rounded-md border relative">
-              {isLoadingData && <LoadingOverlay/>}
               <Table>
                 <TableCaption>
                   Lista de estudiantes para registrar asistencia
