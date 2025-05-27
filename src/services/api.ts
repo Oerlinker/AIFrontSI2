@@ -206,11 +206,31 @@ const api = {
     // Notas (anteriormente llamado Calificaciones)
     fetchNotas: (filters?: FilterParams): Promise<PaginatedResponse<Nota> | Nota[]> =>
         axiosInstance.get('/notas/calificaciones/', { params: filters }).then(res => {
+            // Procesar las notas para asegurar que los campos numéricos sean números
+            const processNota = (nota: any): Nota => {
+                return {
+                    ...nota,
+                    ser_puntaje: Number(nota.ser_puntaje || 0),
+                    saber_puntaje: Number(nota.saber_puntaje || 0),
+                    hacer_puntaje: Number(nota.hacer_puntaje || 0),
+                    decidir_puntaje: Number(nota.decidir_puntaje || 0),
+                    autoevaluacion_ser: Number(nota.autoevaluacion_ser || 0),
+                    autoevaluacion_decidir: Number(nota.autoevaluacion_decidir || 0),
+                    ser_total: nota.ser_total !== null ? Number(nota.ser_total) : null,
+                    decidir_total: nota.decidir_total !== null ? Number(nota.decidir_total) : null,
+                    nota_total: nota.nota_total !== null ? Number(nota.nota_total) : null
+                };
+            };
+
             // Comprobar si es una respuesta paginada o un array directo
             if (res.data && 'results' in res.data) {
-                return res.data as PaginatedResponse<Nota>;
+                const paginatedResponse = res.data as PaginatedResponse<any>;
+                return {
+                    ...paginatedResponse,
+                    results: paginatedResponse.results.map(processNota)
+                };
             }
-            return res.data as Nota[];
+            return (res.data as any[]).map(processNota);
         }),
     getNotaById: (id: number): Promise<Nota> =>
         axiosInstance.get(`/notas/calificaciones/${id}/`).then(res => res.data),
