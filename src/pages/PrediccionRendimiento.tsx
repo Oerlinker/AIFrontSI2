@@ -50,9 +50,14 @@ interface Prediccion {
   id: number;
   estudiante: number;
   materia: number;
-  nivel_rendimiento?: string;
-  confianza: number;
+  promedio_notas: number;
+  porcentaje_asistencia: number;
+  promedio_participaciones: number;
+  valor_numerico: number;
+  nivel_rendimiento: string;
   fecha_prediccion: string;
+  confianza: number;
+  recomendaciones?: string[];
 }
 
 interface Curso {
@@ -556,32 +561,32 @@ const PrediccionRendimiento: React.FC = () => {
                   <div className="p-3 rounded-md bg-gray-50 border">
                     <p className="text-sm font-medium text-gray-700">Asistencia</p>
                     <div className="flex items-center mt-1">
-                      <Progress value={80} className="w-[100px] mr-2" />
-                      <span className="text-sm">80%</span>
+                      <Progress value={currentPrediccion.porcentaje_asistencia} className="w-[100px] mr-2" />
+                      <span className="text-sm">{currentPrediccion.porcentaje_asistencia}%</span>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-md bg-gray-50 border">
                     <p className="text-sm font-medium text-gray-700">Participación</p>
                     <div className="flex items-center mt-1">
-                      <Progress value={65} className="w-[100px] mr-2" />
-                      <span className="text-sm">65%</span>
+                      <Progress value={currentPrediccion.promedio_participaciones} className="w-[100px] mr-2" />
+                      <span className="text-sm">{currentPrediccion.promedio_participaciones}%</span>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-md bg-gray-50 border">
                     <p className="text-sm font-medium text-gray-700">Notas</p>
                     <div className="flex items-center mt-1">
-                      <Progress value={75} className="w-[100px] mr-2" />
-                      <span className="text-sm">75/100</span>
+                      <Progress value={currentPrediccion.promedio_notas} className="w-[100px] mr-2" />
+                      <span className="text-sm">{currentPrediccion.promedio_notas}/100</span>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-md bg-gray-50 border">
                     <p className="text-sm font-medium text-gray-700">Interacción</p>
                     <div className="flex items-center mt-1">
-                      <Progress value={60} className="w-[100px] mr-2" />
-                      <span className="text-sm">60%</span>
+                      <Progress value={currentPrediccion.valor_numerico} className="w-[100px] mr-2" />
+                      <span className="text-sm">{currentPrediccion.valor_numerico}%</span>
                     </div>
                   </div>
                 </div>
@@ -591,10 +596,9 @@ const PrediccionRendimiento: React.FC = () => {
                 <h4 className="font-medium">Recomendaciones</h4>
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <ul className="text-sm space-y-2 list-disc pl-5">
-                    <li>Mejorar la frecuencia de participación en clase</li>
-                    <li>Implementar sesiones adicionales para reforzar conceptos clave</li>
-                    <li>Proporcionar feedback más detallado en las evaluaciones</li>
-                    <li>Sugerir material de estudio complementario</li>
+                    {currentPrediccion.recomendaciones?.map((recomendacion, index) => (
+                      <li key={index}>{recomendacion}</li>
+                    ))}
                   </ul>
                 </div>
               </div>
