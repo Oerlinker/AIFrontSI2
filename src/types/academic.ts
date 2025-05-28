@@ -141,22 +141,57 @@ export interface DashboardStats {
 }
 
 export interface EstudianteDashboard {
-  id: number;
-  nombre: string;
-  curso: string;
-  promedio_general: number;
-  asistencia: number;
-  participacion: number;
-  rendimiento_por_materia: {
-    materia: string;
-    promedio: number;
-    tendencia: 'SUBIENDO' | 'ESTABLE' | 'BAJANDO';
-  }[];
-  tendencia_notas: number[];
-  prediccion?: {
+  estudiante: {
+    id: number;
+    username: string;
+    email: string;
+    nombre_completo: string;
+  };
+  notas: Array<{
+    id: number;
+    nombre: string;
+    trimestres: {
+      [key: string]: {
+        trimestre: string;
+        año: string;
+        nota_total: number;
+        componentes: {
+          ser: number;
+          saber: number;
+          hacer: number;
+          decidir: number;
+          autoevaluacion: number;
+        };
+      };
+    };
+  }>;
+  asistencias: Array<{
+    materia_id: number;
+    materia_nombre: string;
+    porcentaje: number;
+    presentes: number;
+    total: number;
+  }>;
+  participaciones: Array<{
+    materia_id: number;
+    materia_nombre: string;
+    total: number;
+    promedio_valor: number;
+  }>;
+  predicciones: Array<{
+    id: number;
+    materia_id: number;
+    materia_nombre: string;
+    fecha_prediccion: string;
+    valor_numerico: number;
     nivel_rendimiento: string;
     probabilidad_aprobar: number;
-  };
+    variables: {
+      promedio_notas: number;
+      porcentaje_asistencia: number;
+      promedio_participaciones: number;
+    };
+  }>;
 }
 
 export interface ComparativoRendimiento {
@@ -241,5 +276,4 @@ export interface ReporteTrimestral {
   }[];
   total_estudiantes: number;
 }
-
 
