@@ -77,7 +77,7 @@ const PrediccionRendimiento: React.FC = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
   const [recomendaciones, setRecomendaciones] = useState<string[]>([]);
-  // Estados para la comparativa específica
+  const [recomendacionesExpanded, setRecomendacionesExpanded] = useState(false);
   const [filtroEstudiante, setFiltroEstudiante] = useState<number | null>(null);
   const [filtroMateria, setFiltroMateria] = useState<number | null>(null);
   const [tabActiva, setTabActiva] = useState<string>("predicciones");
@@ -519,6 +519,35 @@ const PrediccionRendimiento: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="comparativa">
+          <div className="mb-4">
+            {filtroEstudiante && filtroMateria && (
+              <Card className="bg-blue-50/50 border-blue-100">
+                <CardContent className="flex flex-col md:flex-row justify-between items-start md:items-center p-4">
+                  <div className="mb-2 md:mb-0">
+                    <h3 className="text-sm font-semibold">
+                      Mostrando comparativa específica para:
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {getEstudianteNombre(filtroEstudiante)} - {getMateriaNombre(filtroMateria)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFiltroEstudiante(null);
+                      setFiltroMateria(null);
+                      toast({ title: "Comparativa actualizada", description: "Mostrando todas las comparativas disponibles" });
+                    }}
+                    className="text-sm bg-white hover:bg-blue-50"
+                    size="sm"
+                  >
+                    <BarChart3 className="mr-1 h-4 w-4" />
+                    Volver a comparativa general
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
           <ComparativaRendimiento
             data={comparativoRendimiento}
             isLoading={isFetchingComparativo}
@@ -689,25 +718,35 @@ const PrediccionRendimiento: React.FC = () => {
 
               <div className="space-y-2">
                 <h4 className="font-medium">Recomendaciones</h4>
-                <div
-                  className="bg-blue-50 border border-blue-200 rounded-md p-3 max-h-[200px] overflow-y-auto transition-all duration-300 hover:max-h-[400px] focus-within:max-h-[600px]"
-                  tabIndex={0}
-                >
-                  {recomendaciones && recomendaciones.length > 0 ? (
-                    <>
+                {recomendaciones && recomendaciones.length > 0 ? (
+                  <div className="relative">
+                    <div
+                      className="bg-blue-50 border border-blue-200 rounded-md p-3 overflow-y-auto"
+                      style={{ maxHeight: recomendacionesExpanded ? '400px' : '200px' }}
+                    >
                       <div className="text-xs text-gray-500 italic mb-2 text-right">
-                        {recomendaciones.length} recomendaciones · Desplaza para ver más
+                        {recomendaciones.length} recomendaciones
                       </div>
                       <ul className="text-sm space-y-2 list-disc pl-5">
                         {recomendaciones.map((recomendacion, index) => (
                           <li key={index}>{recomendacion}</li>
                         ))}
                       </ul>
-                    </>
-                  ) : (
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRecomendacionesExpanded(!recomendacionesExpanded)}
+                      className="absolute bottom-2 right-2 bg-white/80 hover:bg-white shadow-sm"
+                    >
+                      {recomendacionesExpanded ? 'Ver menos' : 'Ver más'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 h-[100px] flex items-center justify-center">
                     <p className="text-sm text-gray-500 italic">Cargando recomendaciones...</p>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
