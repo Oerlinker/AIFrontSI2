@@ -27,6 +27,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -72,6 +79,7 @@ const Estudiantes: React.FC = () => {
         curso: undefined,
         is_active: true
     });
+    const [filterCurso, setFilterCurso] = useState<number | undefined>(undefined);
 
     // Verificar si el usuario es administrador o profesor
     const isAdmin = user?.role === 'ADMINISTRATIVO';
@@ -83,11 +91,10 @@ const Estudiantes: React.FC = () => {
         isLoading,
         error
     } = useQuery({
-        queryKey: ['estudiantes'],
-        queryFn: async () => {
-            const response = await api.fetchUsuarios({role: 'ESTUDIANTE'});
-            return response;
-        }
+        queryKey: ['estudiantes', filterCurso],
+        queryFn: () => api.fetchEstudiantes(
+            filterCurso !== undefined ? {curso: filterCurso} : {}
+        ),
     });
 
     // Consulta para obtener los cursos
@@ -179,10 +186,12 @@ const Estudiantes: React.FC = () => {
     // Filtrar estudiantes por término de búsqueda
     const filteredEstudiantes = estudiantes.filter((estudiante: Estudiante) => {
         const fullName = `${estudiante.first_name} ${estudiante.last_name}`.toLowerCase();
-        return fullName.includes(searchTerm.toLowerCase()) ||
+        return (
+            fullName.includes(searchTerm.toLowerCase()) ||
             estudiante.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
             estudiante.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (estudiante.curso_detail?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+            (estudiante.curso_detail?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || false)
+        );
     });
 
     // Manejador para abrir el diálogo de creación
@@ -275,25 +284,44 @@ const Estudiantes: React.FC = () => {
 
     return (
         <div className="p-6 space-y-6">
+            {/* Encabezado */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Gestión de Estudiantes</h1>
                 {isAdmin && (
                     <Button onClick={handleOpenCreateDialog}>
-                        <UserPlus className="mr-2 h-4 w-4"/> Nuevo Estudiante
+                        <UserPlus className="mr-2 h-4 w-4" /> Nuevo Estudiante
                     </Button>
                 )}
             </div>
 
+            {/* BARRA DE FILTROS: búsqueda + selector de curso */}
             <div className="flex items-center space-x-2 mb-4">
-                <Search className="w-5 h-5 text-gray-500"/>
+                <Search className="w-5 h-5 text-gray-500" />
                 <Input
-                    placeholder="Buscar por nombre, email o curso..."
+                    placeholder="Buscar por nombre, email o curso"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="max-w-sm"
                 />
+                <Select
+                    value={filterCurso?.toString() || ''}
+                    onValueChange={(value) => setFilterCurso(value ? Number(value) : undefined)}
+                >
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filtrar por curso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        {cursos.map((c: Curso) => (
+                            <SelectItem key={c.id} value={c.id.toString()}>
+                                {c.nombre}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
+            {/* Pestañas: Tabla / Tarjetas */}
             <Tabs defaultValue="tabla" className="w-full">
                 <TabsList className="mb-4">
                     <TabsTrigger value="tabla">Vista de Tabla</TabsTrigger>
@@ -331,17 +359,23 @@ const Estudiantes: React.FC = () => {
                                             <TableCell>{estudiante.username}</TableCell>
                                             <TableCell>{estudiante.email}</TableCell>
                                             <TableCell>
-                                                {estudiante.curso_detail ? estudiante.curso_detail.nombre : "No asignado"}
+                                                {estudiante.curso_detail?.nombre || 'No asignado'}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon"
-                                                        onClick={() => handleOpenEditDialog(estudiante)}>
-                                                    <Edit className="h-4 w-4"/>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleOpenEditDialog(estudiante)}
+                                                >
+                                                    <Edit className="h-4 w-4" />
                                                 </Button>
                                                 {isAdmin && (
-                                                    <Button variant="ghost" size="icon"
-                                                            onClick={() => handleDeleteEstudiante(estudiante.id)}>
-                                                        <Trash2 className="h-4 w-4 text-red-500"/>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDeleteEstudiante(estudiante.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-red-500" />
                                                     </Button>
                                                 )}
                                             </TableCell>
@@ -363,28 +397,39 @@ const Estudiantes: React.FC = () => {
                             filteredEstudiantes.map((estudiante: Estudiante) => (
                                 <Card key={estudiante.id}>
                                     <CardHeader>
-                                        <CardTitle>{estudiante.first_name} {estudiante.last_name}</CardTitle>
+                                        <CardTitle>
+                                            {estudiante.first_name} {estudiante.last_name}
+                                        </CardTitle>
                                         <CardDescription>{estudiante.username}</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-sm">Email: {estudiante.email}</p>
                                         <p className="text-sm mt-2">
-                                            Curso: {estudiante.curso_detail ? (
-                                            <Badge variant="secondary">{estudiante.curso_detail.nombre}</Badge>
-                                        ) : (
-                                            "No asignado"
-                                        )}
+                                            Curso:{' '}
+                                            {estudiante.curso_detail ? (
+                                                <Badge variant="secondary">
+                                                    {estudiante.curso_detail.nombre}
+                                                </Badge>
+                                            ) : (
+                                                'No asignado'
+                                            )}
                                         </p>
                                     </CardContent>
                                     <CardFooter className="flex justify-end space-x-2">
-                                        <Button variant="outline" size="sm"
-                                                onClick={() => handleOpenEditDialog(estudiante)}>
-                                            <Edit className="h-3 w-3 mr-1"/> Editar
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleOpenEditDialog(estudiante)}
+                                        >
+                                            <Edit className="h-3 w-3 mr-1" /> Editar
                                         </Button>
                                         {isAdmin && (
-                                            <Button variant="destructive" size="sm"
-                                                    onClick={() => handleDeleteEstudiante(estudiante.id)}>
-                                                <Trash2 className="h-3 w-3 mr-1"/> Eliminar
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDeleteEstudiante(estudiante.id)}
+                                            >
+                                                <Trash2 className="h-3 w-3 mr-1" /> Eliminar
                                             </Button>
                                         )}
                                     </CardFooter>
