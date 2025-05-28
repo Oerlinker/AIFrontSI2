@@ -239,7 +239,7 @@ const Participaciones: React.FC = () => {
       }
 
       if (selectedDate) {
-        filters.fecha = format(selectedDate, 'yyyy-MM-dd');
+        filters.fecha = selectedDate.toISOString().slice(0, 10);
       }
 
       if (Object.keys(filters).length === 0) {

@@ -24,7 +24,7 @@ const CursosPage: React.FC = () => {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [currentCurso, setCurrentCurso] = useState<Partial<Curso> | null>(null);
     const [selectedMaterias, setSelectedMaterias] = useState<number[]>([]);
-    const [filterNivel, setFilterNivel] = useState<string>('');
+    const [filterNivel, setFilterNivel] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState<string>('');
     const navigate = useNavigate();
 
@@ -51,8 +51,15 @@ const CursosPage: React.FC = () => {
 
     // Filtrar cursos según el nivel y término de búsqueda
     const filteredCursos = cursos.filter(curso => {
-        const matchesNivel = filterNivel ? curso.nivel === filterNivel : true;
-        const matchesSearch = searchTerm ? curso.nombre.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+        const matchesNivel =
+            filterNivel === 'ALL'
+                ? true
+                : curso.nivel === filterNivel;
+
+        const matchesSearch = searchTerm
+            ? curso.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+            : true;
+
         return matchesNivel && matchesSearch;
     });
 
@@ -232,7 +239,7 @@ const CursosPage: React.FC = () => {
                                     <SelectValue placeholder="Filtrar por nivel"/>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Todos</SelectItem>
+                                    <SelectItem value="ALL">Todos</SelectItem>
                                     <SelectItem value="PRIMARIA">Primaria</SelectItem>
                                     <SelectItem value="SECUNDARIA">Secundaria</SelectItem>
                                 </SelectContent>
