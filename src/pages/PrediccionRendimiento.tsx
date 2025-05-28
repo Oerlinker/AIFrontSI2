@@ -77,6 +77,10 @@ const PrediccionRendimiento: React.FC = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
   const [recomendaciones, setRecomendaciones] = useState<string[]>([]);
+  // Estados para la comparativa específica
+  const [filtroEstudiante, setFiltroEstudiante] = useState<number | null>(null);
+  const [filtroMateria, setFiltroMateria] = useState<number | null>(null);
+  const [tabActiva, setTabActiva] = useState<string>("predicciones");
 
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
@@ -97,9 +101,14 @@ const PrediccionRendimiento: React.FC = () => {
 
   // Hook para obtener los datos de comparativa de rendimiento
   const { data: comparativoRendimiento, isFetching: isFetchingComparativo } = useQuery({
-    queryKey: ['comparativo-rendimiento'],
+    queryKey: ['comparativo-rendimiento', filtroEstudiante, filtroMateria],
     queryFn: async () => {
-      return await api.fetchComparativoRendimiento();
+      // Construir objeto de filtros solo con los valores que no son nulos
+      const filtros: { estudiante?: number; materia?: number } = {};
+      if (filtroEstudiante) filtros.estudiante = filtroEstudiante;
+      if (filtroMateria) filtros.materia = filtroMateria;
+
+      return await api.fetchComparativoRendimiento(filtros);
     },
     enabled: isAdmin || isProfesor, // Solo se ejecuta si el usuario es administrador o profesor
   });
@@ -244,6 +253,20 @@ const PrediccionRendimiento: React.FC = () => {
     });
   };
 
+  // Función para ver comparativa específica desde los detalles de una predicción
+  const handleVerComparativaEspecifica = (estudiante: number, materia: number) => {
+    setFiltroEstudiante(estudiante);
+    setFiltroMateria(materia);
+    setIsDetailsDialogOpen(false); // Cerramos el diálogo de detalles
+    setTabActiva("comparativa"); // Cambiamos a la pestaña de comparativa
+
+    // Notificar que se está cargando la comparativa específica
+    toast({
+      title: "Cargando comparativa",
+      description: "Consultando datos de comparativa para este estudiante y materia."
+    });
+  };
+
   if (!isAdmin && !isProfesor) {
     return <div className="flex justify-center items-center h-96"><h1 className="text-xl text-red-500">No tienes permisos para acceder a esta página</h1></div>;
   }
@@ -264,7 +287,12 @@ const PrediccionRendimiento: React.FC = () => {
         <BrainCircuit className="h-12 w-12 text-academic-purple" />
       </div>
 
-      <Tabs defaultValue="predicciones" className="w-full">
+      <Tabs
+        defaultValue="predicciones"
+        value={tabActiva}
+        onValueChange={(value) => setTabActiva(value)}
+        className="w-full"
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="predicciones">Predicciones</TabsTrigger>
           <TabsTrigger value="comparativa">
@@ -685,6 +713,16 @@ const PrediccionRendimiento: React.FC = () => {
               <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
                 <span>Fecha de predicción: {new Date(currentPrediccion.fecha_prediccion).toLocaleString()}</span>
                 <span>ID: {currentPrediccion.id}</span>
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => handleVerComparativaEspecifica(currentPrediccion.estudiante, currentPrediccion.materia)}
+                >
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Ver Comparativa Específica
+                </Button>
               </div>
             </div>
           )}
