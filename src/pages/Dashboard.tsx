@@ -27,12 +27,7 @@ const Dashboard: React.FC = () => {
     enabled: isEstudiante,
   });
 
-  // Para administrativos y profesores, obtener datos comparativos
-  const { data: comparativoData, isLoading: isLoadingComparativo } = useQuery({
-    queryKey: ['dashboard-comparativo'],
-    queryFn: api.fetchComparativoRendimiento,
-    enabled: !isEstudiante && (isAdmin || isProfesor),
-  });
+
 
   // Función para convertir nombres de trimestres
   const mapearTrimestre = (trimestre: string) => {
@@ -105,7 +100,7 @@ const Dashboard: React.FC = () => {
     }));
   }, [stats]);
 
-  const isLoading = isLoadingStats || (isEstudiante && isLoadingEstudiante) || (isAdmin && isLoadingComparativo);
+  const isLoading = isLoadingStats || (isEstudiante && isLoadingEstudiante) || (isAdmin);
 
   if (isLoading) {
     return (

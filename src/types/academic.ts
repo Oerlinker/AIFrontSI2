@@ -160,22 +160,18 @@ export interface EstudianteDashboard {
 }
 
 export interface ComparativoRendimiento {
-  curso_id: number;
-  curso_nombre: string;
-  promedio_curso: number;
-  mejores_estudiantes: {
-    id: number;
-    nombre: string;
-    promedio: number;
-  }[];
-  promedio_por_materia: {
-    materia: string;
-    promedio: number;
-  }[];
-  distribucion_notas: {
-    rango: string;
-    cantidad: number;
-  }[];
+  comparaciones: Array<{
+    estudiante_id: number;
+    estudiante_nombre: string;
+    materia_id: number;
+    materia_nombre: string;
+    nota_predicha: number;
+    nota_real: number;
+    diferencia: number;
+    nivel_predicho: string;
+  }>;
+  precision_modelo: number;
+  total_predicciones: number;
 }
 
 export interface EstadisticasMateria {
@@ -245,4 +241,5 @@ export interface ReporteTrimestral {
   }[];
   total_estudiantes: number;
 }
+
 

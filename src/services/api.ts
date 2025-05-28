@@ -306,8 +306,8 @@ const api = {
             : '/dashboard/estudiante/';
         return axiosInstance.get(url).then(res => res.data);
     },
-    fetchComparativoRendimiento: (): Promise<ComparativoRendimiento> =>
-        axiosInstance.get('/dashboard/comparativo/').then(res => res.data),
+    fetchComparativoRendimiento: (filters?: { estudiante?: number; materia?: number }): Promise<ComparativoRendimiento> =>
+        axiosInstance.get('/dashboard/comparativo/', { params: filters }).then(res => res.data),
 
     // Notificaciones
     fetchNotificaciones: (): Promise<Notificacion[]> =>
