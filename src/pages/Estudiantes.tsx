@@ -79,7 +79,7 @@ const Estudiantes: React.FC = () => {
         curso: undefined,
         is_active: true
     });
-    const [filterCurso, setFilterCurso] = useState<number | undefined>(undefined);
+    const [filterCurso, setFilterCurso] = useState<string>('ALL');
 
     // Verificar si el usuario es administrador o profesor
     const isAdmin = user?.role === 'ADMINISTRATIVO';
@@ -93,7 +93,9 @@ const Estudiantes: React.FC = () => {
     } = useQuery({
         queryKey: ['estudiantes', filterCurso],
         queryFn: () => api.fetchEstudiantes(
-            filterCurso !== undefined ? {curso: filterCurso} : {}
+            filterCurso === 'ALL'
+                ? {}
+                : { curso: Number(filterCurso) }
         ),
     });
 
@@ -289,14 +291,14 @@ const Estudiantes: React.FC = () => {
                 <h1 className="text-3xl font-bold">Gestión de Estudiantes</h1>
                 {isAdmin && (
                     <Button onClick={handleOpenCreateDialog}>
-                        <UserPlus className="mr-2 h-4 w-4" /> Nuevo Estudiante
+                        <UserPlus className="mr-2 h-4 w-4"/> Nuevo Estudiante
                     </Button>
                 )}
             </div>
 
             {/* BARRA DE FILTROS: búsqueda + selector de curso */}
             <div className="flex items-center space-x-2 mb-4">
-                <Search className="w-5 h-5 text-gray-500" />
+                <Search className="w-5 h-5 text-gray-500"/>
                 <Input
                     placeholder="Buscar por nombre, email o curso"
                     value={searchTerm}
@@ -304,14 +306,14 @@ const Estudiantes: React.FC = () => {
                     className="max-w-sm"
                 />
                 <Select
-                    value={filterCurso?.toString() || ''}
-                    onValueChange={(value) => setFilterCurso(value ? Number(value) : undefined)}
+                    value={filterCurso}
+                    onValueChange={(value) => setFilterCurso(value)}
                 >
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filtrar por curso" />
+                        <SelectValue placeholder="Filtrar por curso"/>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="ALL">Todos</SelectItem>
                         {cursos.map((c: Curso) => (
                             <SelectItem key={c.id} value={c.id.toString()}>
                                 {c.nombre}
@@ -367,7 +369,7 @@ const Estudiantes: React.FC = () => {
                                                     size="icon"
                                                     onClick={() => handleOpenEditDialog(estudiante)}
                                                 >
-                                                    <Edit className="h-4 w-4" />
+                                                    <Edit className="h-4 w-4"/>
                                                 </Button>
                                                 {isAdmin && (
                                                     <Button
@@ -375,7 +377,7 @@ const Estudiantes: React.FC = () => {
                                                         size="icon"
                                                         onClick={() => handleDeleteEstudiante(estudiante.id)}
                                                     >
-                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                        <Trash2 className="h-4 w-4 text-red-500"/>
                                                     </Button>
                                                 )}
                                             </TableCell>
@@ -421,7 +423,7 @@ const Estudiantes: React.FC = () => {
                                             size="sm"
                                             onClick={() => handleOpenEditDialog(estudiante)}
                                         >
-                                            <Edit className="h-3 w-3 mr-1" /> Editar
+                                            <Edit className="h-3 w-3 mr-1"/> Editar
                                         </Button>
                                         {isAdmin && (
                                             <Button
@@ -429,7 +431,7 @@ const Estudiantes: React.FC = () => {
                                                 size="sm"
                                                 onClick={() => handleDeleteEstudiante(estudiante.id)}
                                             >
-                                                <Trash2 className="h-3 w-3 mr-1" /> Eliminar
+                                                <Trash2 className="h-3 w-3 mr-1"/> Eliminar
                                             </Button>
                                         )}
                                     </CardFooter>
