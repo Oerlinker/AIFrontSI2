@@ -188,19 +188,40 @@ const PrediccionRendimiento: React.FC = () => {
   const handleOpenDetailsDialog = async (prediccion: Prediccion) => {
     setCurrentPrediccion(prediccion);
     setIsDetailsDialogOpen(true);
+    // Inicialmente establecemos recomendaciones como un array vacío
+    setRecomendaciones([]);
 
     try {
       // Obtener las recomendaciones específicas desde el endpoint
-      const recomendacionesData = await api.fetchRecomendacionesPorPrediccion(prediccion.id);
-      setRecomendaciones(recomendacionesData);
+      const response = await api.fetchRecomendacionesPorPrediccion(prediccion.id);
+
+      // El formato esperado es un objeto con una propiedad "recomendaciones" que contiene un array de objetos
+      // con propiedades "categoria" y "mensaje"
+      if (response && typeof response === 'object' && 'recomendaciones' in response) {
+        if (Array.isArray(response.recomendaciones)) {
+          // Transformar cada objeto de recomendación en un string con formato: "[Categoría] Mensaje"
+          const formattedRecomendaciones = response.recomendaciones.map(rec => {
+            if (typeof rec === 'object' && rec !== null && 'categoria' in rec && 'mensaje' in rec) {
+              return `[${rec.categoria}] ${rec.mensaje}`;
+            }
+            // Si la recomendación no tiene el formato esperado, devolver el objeto como string
+            return JSON.stringify(rec);
+          });
+          setRecomendaciones(formattedRecomendaciones);
+        } else {
+          setRecomendaciones(['El formato de las recomendaciones no es el esperado']);
+        }
+      } else {
+        setRecomendaciones(['No se encontraron recomendaciones para este estudiante']);
+      }
     } catch (error) {
       console.error("Error al cargar recomendaciones:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar las recomendaciones para esta predicción",
+        description: "Error al procesar las recomendaciones recibidas",
       });
-      setRecomendaciones([]);
+      setRecomendaciones(['Error al cargar las recomendaciones. Por favor, intente nuevamente.']);
     }
   };
 
