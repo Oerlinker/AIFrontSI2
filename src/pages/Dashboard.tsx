@@ -100,7 +100,7 @@ const Dashboard: React.FC = () => {
     }));
   }, [stats]);
 
-  const isLoading = isLoadingStats || (isEstudiante && isLoadingEstudiante) || (isAdmin);
+  const isLoading = isLoadingStats || (isEstudiante && isLoadingEstudiante);
 
   if (isLoading) {
     return (
