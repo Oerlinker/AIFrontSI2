@@ -315,10 +315,21 @@ const api = {
     fetchDashboardEstadisticas: (): Promise<DashboardStats> =>
         axiosInstance.get('/dashboard/estadisticas/').then(res => res.data),
     fetchEstudianteDashboard: (estudianteId?: number): Promise<EstudianteDashboard> => {
+        // Asegurarnos de que tenemos el token de autenticación
+        const token = localStorage.getItem('accessToken');
         const url = estudianteId
             ? `/dashboard/estudiante/${estudianteId}/`
             : '/dashboard/estudiante/';
-        return axiosInstance.get(url).then(res => res.data);
+
+        return axiosInstance.get(url, {
+            headers: token ? {
+                'Authorization': `Bearer ${token}`
+            } : undefined
+        }).then(res => res.data)
+        .catch(error => {
+            console.error('Error al obtener dashboard de estudiante:', error);
+            throw error;
+        });
     },
     fetchComparativoRendimiento: (filters?: { estudiante?: number; materia?: number }): Promise<ComparativoRendimiento> =>
         axiosInstance.get('/dashboard/comparativo/', { params: filters }).then(res => res.data),

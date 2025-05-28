@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar, ClipboardCheck, Grid2X2, AlertCircle,  Award,  BookOpen, Users, CheckSquare } from 'lucide-react';
+import { User, Calendar, ClipboardCheck, Grid2X2, AlertCircle, Award, BookOpen, Users, CheckSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 import { DashboardStats, EstudianteDashboard } from '@/types/academic';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -24,7 +25,21 @@ const Dashboard: React.FC = () => {
     queryKey: ['dashboard-estudiante'],
     queryFn: () => api.fetchEstudianteDashboard(),
     enabled: isEstudiante,
+    retry: 2, // Intentar la petición hasta 2 veces si falla
+    retryDelay: 1000, // Esperar 1 segundo entre intentos
   });
+
+  // Mostrar errores en toast
+  useEffect(() => {
+    if (estudianteError) {
+      console.error('Error al cargar el dashboard de estudiante:', estudianteError);
+      toast({
+        title: 'Error al cargar el dashboard',
+        description: 'No se pudieron cargar tus datos académicos. Por favor, intenta de nuevo más tarde.',
+        variant: 'destructive',
+      });
+    }
+  }, [estudianteError]);
 
   // Función para convertir nombres de trimestres
   const mapearTrimestre = (trimestre: string) => {
