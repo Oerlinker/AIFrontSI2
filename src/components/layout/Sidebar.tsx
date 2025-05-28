@@ -12,7 +12,9 @@ import {
   LogOut,
   BrainCircuit,
   GraduationCap,
-  BookOpen
+  BookOpen,
+  BarChart,
+  BookOpenCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -24,6 +26,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  const estudianteNavItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: Grid2X2 },
+  ];
 
   const profesorNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Grid2X2 },
@@ -44,7 +50,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { path: '/prediccion-rendimiento', label: 'Predicciones IA', icon: BrainCircuit },
   ];
 
-  const navItems = user?.role === 'ADMINISTRATIVO' ? administrativoNavItems : profesorNavItems;
+  // Seleccionar el menú adecuado según el rol del usuario
+  let navItems = [];
+  if (user?.role === 'ADMINISTRATIVO') {
+    navItems = administrativoNavItems;
+  } else if (user?.role === 'PROFESOR') {
+    navItems = profesorNavItems;
+  } else if (user?.role === 'ESTUDIANTE') {
+    navItems = estudianteNavItems;
+  }
 
   return (
     <div className={cn(

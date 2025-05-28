@@ -65,6 +65,16 @@ const tiposParticipacion = [
   { value: 'DEBATE',      label: 'Debate' },
 ];
 
+interface ParticipacionFilters {
+  estudiante?: number;
+  materia?: number;
+  curso?: number;
+  fecha?: string;       // Para filtrar por una fecha específica (YYYY-MM-DD)
+  fecha_inicio?: string; // Para filtrar por un rango de fechas
+  fecha_fin?: string;   // Para filtrar por un rango de fechas
+  tipo?: string;        // Tipo de participación (ACTIVA, PASIVA, etc.)
+}
+
 const Participaciones: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();

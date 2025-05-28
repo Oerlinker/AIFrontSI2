@@ -24,7 +24,7 @@ export type FilterParams = {
     fecha_fin?: string;
     periodo?: number;
     trimestre?: string;
-    anio_academico?: string; // Corregido de año_academico
+    anio_academico?: string;
     page?: number;
     page_size?: number;
     search?: string;
