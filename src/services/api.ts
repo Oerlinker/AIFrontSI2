@@ -291,7 +291,9 @@ const api = {
     getPrediccionById: (id: number): Promise<Prediccion> =>
         axiosInstance.get(`/predicciones/${id}/`).then(res => res.data),
     createPrediccion: (data: { estudiante: number, materia: number }): Promise<Prediccion> =>
-        axiosInstance.post('/predicciones/generar_prediccion/', data).then(res => res.data),
+        axiosInstance.post('/predicciones/generar_prediccion_ml/', data).then(res => res.data),
+    fetchRecomendacionesPorPrediccion: (prediccionId: number): Promise<string[]> =>
+        axiosInstance.get(`/predicciones/${prediccionId}/recomendaciones/`).then(res => res.data),
 
     // Dashboard
     fetchDashboardGeneral: (): Promise<DashboardStats> =>
@@ -315,7 +317,7 @@ const api = {
     createNotificacion: (data: Omit<Notificacion, 'id' | 'fecha_creacion' | 'fecha_lectura'>): Promise<Notificacion> =>
         axiosInstance.post('/notificaciones/', data).then(res => res.data),
     updateNotificacion: (id: number, data: Partial<Notificacion>): Promise<Notificacion> =>
-        axiosInstance.put(`/notificaciones/${id}/`).then(res => res.data),
+        axiosInstance.put(`/notificaciones/${id}/`, data).then(res => res.data),
     marcarNotificacionComoLeida: (id: number): Promise<Notificacion> =>
         axiosInstance.post(`/notificaciones/${id}/marcar_como_leida/ `, {}).then(res => res.data),
     deleteNotificacion: (id: number): Promise<void> =>

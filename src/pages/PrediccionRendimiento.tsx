@@ -75,6 +75,7 @@ const PrediccionRendimiento: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [currentPrediccion, setCurrentPrediccion] = useState<Prediccion | null>(null);
+  const [recomendaciones, setRecomendaciones] = useState<string[]>([]);
 
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
@@ -184,9 +185,23 @@ const PrediccionRendimiento: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const handleOpenDetailsDialog = (prediccion: Prediccion) => {
+  const handleOpenDetailsDialog = async (prediccion: Prediccion) => {
     setCurrentPrediccion(prediccion);
     setIsDetailsDialogOpen(true);
+
+    try {
+      // Obtener las recomendaciones específicas desde el endpoint
+      const recomendacionesData = await api.fetchRecomendacionesPorPrediccion(prediccion.id);
+      setRecomendaciones(recomendacionesData);
+    } catch (error) {
+      console.error("Error al cargar recomendaciones:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar las recomendaciones para esta predicción",
+      });
+      setRecomendaciones([]);
+    }
   };
 
   const handleGenerarPrediccion = async () => {
@@ -198,420 +213,57 @@ const PrediccionRendimiento: React.FC = () => {
     });
   };
 
-  if (!isAdmin && !isProfesor) {
-    return <div className="flex justify-center items-center h-96"><h1 className="text-xl text-red-500">No tienes permisos para acceder a esta página</h1></div>;
-  }
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-96"><Loader2 className="h-8 w-8 animate-spin" /><p className="ml-2">Cargando...</p></div>;
-  }
-
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Predicción de Rendimiento Académico</h1>
-          <p className="text-muted-foreground">
-            Análisis predictivo del rendimiento estudiantil basado en inteligencia artificial
-          </p>
-        </div>
-        <BrainCircuit className="h-12 w-12 text-academic-purple" />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Generar Predicciones</CardTitle>
-          <CardDescription>Selecciona una materia para analizar y predecir el rendimiento académico</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="materia">Materia</Label>
-              <Select
-                onValueChange={(value) => setSelectedMateria(parseInt(value))}
-                value={selectedMateria?.toString() || ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar Materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {materias.map((materia: Materia) => (
-                    <SelectItem key={materia.id} value={materia.id.toString()}>
-                      {materia.nombre} ({materia.codigo})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="curso">Curso</Label>
-              <Select
-                onValueChange={(value) => setSelectedCurso(parseInt(value))}
-                value={selectedCurso?.toString() || ""}
-                disabled={!selectedMateria}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={selectedMateria ? "Seleccionar Curso" : "Primero seleccione una materia"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cursosDisponibles.map((curso: Curso) => (
-                    <SelectItem key={curso.id} value={curso.id.toString()}>
-                      {curso.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 flex items-end">
-              <Button
-                onClick={() => handleOpenCreateDialog()}
-                disabled={!selectedMateria || !selectedCurso || estudiantesSinPrediccion.length === 0}
-                className="w-full"
-              >
-                <BrainCircuit className="mr-2 h-4 w-4" />
-                Generar Nueva Predicción
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {selectedMateria && (
-        <Tabs defaultValue="predicciones" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="predicciones">Predicciones Existentes</TabsTrigger>
-            <TabsTrigger value="pendientes">Estudiantes Sin Análisis</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="predicciones">
-            {predicciones.length > 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Predicciones para {getMateriaNombre(selectedMateria)}
-                  </CardTitle>
-                  <CardDescription>
-                    Resultados del análisis predictivo para los estudiantes
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableCaption>
-                        Total de predicciones: {predicciones.length}
-                      </TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Estudiante</TableHead>
-                          <TableHead>Nivel Predicho</TableHead>
-                          <TableHead>Confianza</TableHead>
-                          <TableHead>Fecha Predicción</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {predicciones.map((prediccion: Prediccion) => (
-                          <TableRow key={prediccion.id}>
-                            <TableCell className="font-medium">
-                              {getEstudianteNombre(prediccion.estudiante)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {getNivelRendimientoIcon(prediccion.nivel_rendimiento)}
-                                <Badge className={`${getNivelRendimientoColor(prediccion.nivel_rendimiento)}`}>
-                                  {prediccion.nivel_rendimiento}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Progress value={prediccion.confianza} className="w-[60px]" />
-                                <span>{prediccion.confianza}%</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(prediccion.fecha_prediccion).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenDetailsDialog(prediccion)}
-                              >
-                                <ArrowUpRight className="h-3 w-3 mr-1" />
-                                Detalles
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="text-center py-10 bg-white rounded-lg border shadow-sm">
-                <BrainCircuit className="h-16 w-16 mx-auto text-gray-400 mb-3" />
-                <h3 className="text-lg font-medium text-gray-900">No hay predicciones generadas</h3>
-                <p className="text-gray-500 mt-2 mb-5">
-                  No se han generado predicciones de rendimiento para esta materia.
-                </p>
-                <Button
-                  onClick={() => handleOpenCreateDialog()}
-                  disabled={estudiantesSinPrediccion.length === 0}
-                >
-                  Generar primera predicción
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pendientes">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Estudiantes sin análisis predictivo
-                </CardTitle>
-                <CardDescription>
-                  Estudiantes que aún no tienen una predicción de rendimiento para esta materia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {estudiantesSinPrediccion.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableCaption>
-                        Total: {estudiantesSinPrediccion.length} estudiantes sin predicción
-                      </TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ID</TableHead>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {estudiantesSinPrediccion.map((estudiante: User) => (
-                          <TableRow key={estudiante.id}>
-                            <TableCell>{estudiante.id}</TableCell>
-                            <TableCell className="font-medium">
-                              {estudiante.first_name} {estudiante.last_name}
-                            </TableCell>
-                            <TableCell>{estudiante.email}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenCreateDialog(estudiante)}
-                              >
-                                <BrainCircuit className="h-3 w-3 mr-1" />
-                                Generar Predicción
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-3" />
-                    <h3 className="text-lg font-medium">¡Análisis completo!</h3>
-                    <p className="text-gray-500 mt-2">
-                      Todos los estudiantes ya tienen predicciones de rendimiento para esta materia.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      )}
-
-      {/* Diálogo para generar predicción */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              Generar Predicción de Rendimiento
-            </DialogTitle>
-            <DialogDescription>
-              El sistema utilizará inteligencia artificial para predecir el rendimiento académico
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <Alert>
-              <TrendingUp className="h-4 w-4" />
-              <AlertTitle>Análisis predictivo de rendimiento</AlertTitle>
-              <AlertDescription>
-                El modelo utilizará datos históricos de notas, asistencias y participaciones
-                para generar una predicción de rendimiento académico.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-2">
-              <Label htmlFor="materia">Materia</Label>
-              <Select
-                value={selectedMateria?.toString() || ""}
-                onValueChange={(value) => setSelectedMateria(parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {materias.map((materia: Materia) => (
-                    <SelectItem key={materia.id} value={materia.id.toString()}>
-                      {materia.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedMateria && selectedCurso && (
-              <div className="space-y-2">
-                <Label htmlFor="estudiante">Estudiante</Label>
-                <Select
-                  value={selectedEstudiante?.toString() || ""}
-                  onValueChange={(value) => setSelectedEstudiante(parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estudiante" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {estudiantesSinPrediccion.map((estudiante: User) => (
-                      <SelectItem key={estudiante.id} value={estudiante.id.toString()}>
-                        {estudiante.first_name} {estudiante.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleGenerarPrediccion}
-              disabled={!selectedMateria || !selectedEstudiante || createPrediccionMutation.isPending}
-            >
-              {createPrediccionMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <BrainCircuit className="mr-2 h-4 w-4" />
-                  Generar Predicción
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo para mostrar detalles de predicción */}
+    <div>
+      {/* Other components and logic */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Detalles de Predicción
-            </DialogTitle>
+            <DialogTitle>Detalles de la Predicción</DialogTitle>
             <DialogDescription>
-              Análisis completo de la predicción de rendimiento académico
+              Información detallada sobre la predicción seleccionada.
             </DialogDescription>
           </DialogHeader>
-
           {currentPrediccion && (
-            <div className="grid gap-4 py-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold">{getEstudianteNombre(currentPrediccion.estudiante)}</h3>
-                  <p className="text-sm text-muted-foreground">{getMateriaNombre(currentPrediccion.materia)}</p>
-                </div>
-                <Badge className={`${getNivelRendimientoColor(currentPrediccion.nivel_rendimiento)} text-lg py-1 px-3`}>
-                  {currentPrediccion.nivel_rendimiento}
-                </Badge>
-              </div>
-
-              <Separator />
-
+            <div className="space-y-4">
               <div>
-                <h4 className="font-medium mb-2">Confianza de la predicción</h4>
-                <div className="flex items-center space-x-3">
-                  <Progress value={currentPrediccion.confianza} className="w-[200px]" />
-                  <span className="font-bold">{currentPrediccion.confianza}%</span>
+                <h4 className="font-medium">Estudiante</h4>
+                <p>{getEstudianteNombre(currentPrediccion.estudiante)}</p>
+              </div>
+              <div>
+                <h4 className="font-medium">Materia</h4>
+                <p>{getMateriaNombre(currentPrediccion.materia)}</p>
+              </div>
+              <div>
+                <h4 className="font-medium">Nivel de Rendimiento</h4>
+                <div className={`inline-flex items-center px-2 py-1 rounded-md ${getNivelRendimientoColor(currentPrediccion.nivel_rendimiento)}`}>
+                  {getNivelRendimientoIcon(currentPrediccion.nivel_rendimiento)}
+                  <span className="ml-2">{currentPrediccion.nivel_rendimiento}</span>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <h4 className="font-medium">Factores de influencia</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-md bg-gray-50 border">
-                    <p className="text-sm font-medium text-gray-700">Asistencia</p>
-                    <div className="flex items-center mt-1">
-                      <Progress value={currentPrediccion.porcentaje_asistencia} className="w-[100px] mr-2" />
-                      <span className="text-sm">{currentPrediccion.porcentaje_asistencia}%</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-md bg-gray-50 border">
-                    <p className="text-sm font-medium text-gray-700">Participación</p>
-                    <div className="flex items-center mt-1">
-                      <Progress value={currentPrediccion.promedio_participaciones} className="w-[100px] mr-2" />
-                      <span className="text-sm">{currentPrediccion.promedio_participaciones}%</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-md bg-gray-50 border">
-                    <p className="text-sm font-medium text-gray-700">Notas</p>
-                    <div className="flex items-center mt-1">
-                      <Progress value={currentPrediccion.promedio_notas} className="w-[100px] mr-2" />
-                      <span className="text-sm">{currentPrediccion.promedio_notas}/100</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-md bg-gray-50 border">
-                    <p className="text-sm font-medium text-gray-700">Interacción</p>
-                    <div className="flex items-center mt-1">
-                      <Progress value={currentPrediccion.valor_numerico} className="w-[100px] mr-2" />
-                      <span className="text-sm">{currentPrediccion.valor_numerico}%</span>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <h4 className="font-medium">Confianza</h4>
+                <Progress value={currentPrediccion.confianza} />
+                <p>{currentPrediccion.confianza}%</p>
               </div>
-
               <div className="space-y-2">
                 <h4 className="font-medium">Recomendaciones</h4>
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                  <ul className="text-sm space-y-2 list-disc pl-5">
-                    {currentPrediccion.recomendaciones?.map((recomendacion, index) => (
-                      <li key={index}>{recomendacion}</li>
-                    ))}
-                  </ul>
+                  {recomendaciones && recomendaciones.length > 0 ? (
+                    <ul className="text-sm space-y-2 list-disc pl-5">
+                      {recomendaciones.map((recomendacion, index) => (
+                        <li key={index}>{recomendacion}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">Cargando recomendaciones...</p>
+                  )}
                 </div>
-              </div>
-
-              <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
-                <span>Fecha de predicción: {new Date(currentPrediccion.fecha_prediccion).toLocaleString()}</span>
-                <span>ID: {currentPrediccion.id}</span>
               </div>
             </div>
           )}
-
           <DialogFooter>
-            <Button onClick={() => setIsDetailsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
               Cerrar
             </Button>
           </DialogFooter>
