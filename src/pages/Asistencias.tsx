@@ -206,7 +206,7 @@ const Asistencias: React.FC = () => {
 
       const asistenciasMap: Record<number, boolean> = {};
       estudiantes.forEach((est: Estudiante) => {
-        asistenciasMap[est.id] = false; // Inicializar como ausente (false)
+        asistenciasMap[est.id] = true; // Inicializar como ausente (false)
       });
       setAsistencias(asistenciasMap);
     }
