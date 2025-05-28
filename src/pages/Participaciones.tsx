@@ -226,12 +226,16 @@ const Participaciones: React.FC = () => {
     isLoading: isLoadingParticipaciones,
     refetch: refetchParticipaciones
   } = useQuery({
-    queryKey: ['participaciones', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
+    queryKey: ['participaciones', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
     queryFn: async () => {
-      const filters: { materia?: number; fecha?: string } = {};
+      const filters: { materia?: number; curso?: number; fecha?: string } = {};
 
       if (selectedMateria) {
         filters.materia = selectedMateria;
+      }
+
+      if (selectedCurso) {
+        filters.curso = selectedCurso;
       }
 
       if (selectedDate) {
@@ -244,7 +248,7 @@ const Participaciones: React.FC = () => {
 
       return api.fetchParticipaciones(filters);
     },
-    enabled: !!selectedMateria || !!selectedDate
+    enabled: !!(selectedMateria || selectedCurso || selectedDate)
   });
 
   // Mutación para crear una nueva participación

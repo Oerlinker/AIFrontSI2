@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
 import {
-  BrainCircuit, Loader2, ArrowUpRight, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3
+  BrainCircuit, Loader2, ArrowUpRight, TrendingUp, AlertTriangle, CheckCircle, Info, BarChart3, ClipboardCheck
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -81,6 +81,7 @@ const PrediccionRendimiento: React.FC = () => {
   const [filtroEstudiante, setFiltroEstudiante] = useState<number | null>(null);
   const [filtroMateria, setFiltroMateria] = useState<number | null>(null);
   const [tabActiva, setTabActiva] = useState<string>("predicciones");
+  const [selectedPeriodo, setSelectedPeriodo] = useState<number | null>(null);
 
   const isAdmin = user?.role === 'ADMINISTRATIVO';
   const isProfesor = user?.role === 'PROFESOR';
@@ -111,6 +112,33 @@ const PrediccionRendimiento: React.FC = () => {
       return await api.fetchComparativoRendimiento(filtros);
     },
     enabled: isAdmin || isProfesor, // Solo se ejecuta si el usuario es administrador o profesor
+  });
+
+  // Hook para obtener los períodos disponibles
+  const { data: periodos = [], isFetching: isFetchingPeriodos } = useQuery({
+    queryKey: ['periodos'],
+    queryFn: api.fetchPeriodos,
+    enabled: isAdmin, // Solo para administradores
+  });
+
+  // Hook para obtener estadísticas de materia
+  const { data: estadisticasMateria, isFetching: isFetchingEstadisticas } = useQuery({
+    queryKey: ['estadisticas-materia', selectedMateria, selectedPeriodo],
+    queryFn: async () => {
+      if (!selectedMateria) return null;
+      return api.fetchEstadisticasMateria(selectedMateria, selectedPeriodo || undefined);
+    },
+    enabled: !!(isAdmin && selectedMateria),
+  });
+
+  // Hook para obtener reporte trimestral
+  const { data: reporteTrimestral, isFetching: isFetchingReporte } = useQuery({
+    queryKey: ['reporte-trimestral', selectedCurso, selectedPeriodo],
+    queryFn: async () => {
+      if (!selectedCurso || !selectedPeriodo) return null;
+      return api.fetchReporteTrimestral(selectedCurso, selectedPeriodo);
+    },
+    enabled: !!(isAdmin && selectedCurso && selectedPeriodo),
   });
 
   const cursosDisponibles = useMemo(() => {
@@ -301,6 +329,22 @@ const PrediccionRendimiento: React.FC = () => {
               Comparativa Rendimiento
             </div>
           </TabsTrigger>
+          {isAdmin && (
+            <>
+              <TabsTrigger value="estadisticas">
+                <div className="flex items-center">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Estadísticas Materia
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="reportes">
+                <div className="flex items-center">
+                  <ClipboardCheck className="h-4 w-4 mr-1" />
+                  Reportes Trimestrales
+                </div>
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="predicciones">
