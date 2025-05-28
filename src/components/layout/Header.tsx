@@ -70,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                       {user.email}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.rol}
+                      {user.role}
                     </p>
                   </div>
                 </DropdownMenuLabel>

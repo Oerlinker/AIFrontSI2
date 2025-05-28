@@ -53,6 +53,16 @@ export interface PaginatedResponse<T> {
     results: T[];
 }
 
+export interface ParticipacionFilters {
+    estudiante?: number;
+    materia?: number;
+    curso?: number;
+    fecha?: string;
+    fecha_inicio?: string;
+    fecha_fin?: string;
+    tipo?: string;
+}
+
 // Instancia de Axios
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
@@ -274,8 +284,12 @@ const api = {
         axiosInstance.delete(`/asistencias/${id}/`).then(() => {}),
 
     // Participaciones
-    fetchParticipaciones: (filters?: FilterParams): Promise<Participacion[]> =>
-        axiosInstance.get('/participaciones/', { params: filters }).then(res => res.data),
+    fetchParticipaciones: (
+        filters?: ParticipacionFilters
+    ): Promise<Participacion[]> =>
+        axiosInstance
+            .get('/participaciones/', { params: filters })
+            .then(res => res.data.results as Participacion[]),
     getParticipacionById: (id: number): Promise<Participacion> =>
         axiosInstance.get(`/participaciones/${id}/`).then(res => res.data),
     recordParticipacion: (data: Omit<Participacion, 'id'>): Promise<Participacion> =>
