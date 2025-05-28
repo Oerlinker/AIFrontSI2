@@ -630,13 +630,21 @@ const PrediccionRendimiento: React.FC = () => {
 
               <div className="space-y-2">
                 <h4 className="font-medium">Recomendaciones</h4>
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div
+                  className="bg-blue-50 border border-blue-200 rounded-md p-3 max-h-[200px] overflow-y-auto transition-all duration-300 hover:max-h-[400px] focus-within:max-h-[600px]"
+                  tabIndex={0}
+                >
                   {recomendaciones && recomendaciones.length > 0 ? (
-                    <ul className="text-sm space-y-2 list-disc pl-5">
-                      {recomendaciones.map((recomendacion, index) => (
-                        <li key={index}>{recomendacion}</li>
-                      ))}
-                    </ul>
+                    <>
+                      <div className="text-xs text-gray-500 italic mb-2 text-right">
+                        {recomendaciones.length} recomendaciones · Desplaza para ver más
+                      </div>
+                      <ul className="text-sm space-y-2 list-disc pl-5">
+                        {recomendaciones.map((recomendacion, index) => (
+                          <li key={index}>{recomendacion}</li>
+                        ))}
+                      </ul>
+                    </>
                   ) : (
                     <p className="text-sm text-gray-500 italic">Cargando recomendaciones...</p>
                   )}

@@ -10,9 +10,9 @@ import { DashboardStats, EstudianteDashboard, ComparativoRendimiento } from '@/t
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user?.rol === 'ADMINISTRATIVO';
-  const isProfesor = user?.rol === 'PROFESOR';
-  const isEstudiante = user?.rol === 'ESTUDIANTE';
+  const isAdmin = user?.role === 'ADMINISTRATIVO';
+  const isProfesor = user?.role === 'PROFESOR';
+  const isEstudiante = user?.role === 'ESTUDIANTE';
 
   // Consultar datos estadísticos generales
   const { data: stats, isLoading: isLoadingStats, error: statsError } = useQuery<DashboardStats>({
@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
               ¡Bienvenido/a, {user?.first_name}!
             </h1>
             <p className="text-white/90 text-lg">
-              {user?.rol === 'ADMINISTRATIVO'
+              {user?.role === 'ADMINISTRATIVO'
                 ? 'Panel de administración del sistema académico'
                 : 'Dashboard de gestión académica'
               }
@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="text-right">
             <Badge variant="secondary" className="bg-white/20 text-white border-white/30 mb-2">
-              {user?.rol}
+              {user?.role}
             </Badge>
             <p className="text-white/80 text-sm">
               {new Date().toLocaleDateString('es-ES', {
