@@ -19,6 +19,7 @@ import Materias from "./pages/Materias";
 import Notas from "./pages/Notas";
 import Participaciones from "./pages/Participaciones";
 import PrediccionRendimiento from "./pages/PrediccionRendimiento";
+import Perfil from "./pages/Perfil";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,6 +95,13 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
+              {/* Ruta para el perfil de usuario */}
+              <Route path="profile" element={
+                <ProtectedRoute>
+                  <Perfil />
+                </ProtectedRoute>
+              } />
+
               {/* Ruta para página no encontrada */}
               <Route path="*" element={<NotFound />} />
             </Route>
