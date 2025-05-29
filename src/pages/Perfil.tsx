@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/components/ui/use-toast';
-import { School, BookOpen, UserRound, Mail, UserCircle } from 'lucide-react';
+import { School, BookOpen, UserRound, Mail, UserCircle, ShieldAlert } from 'lucide-react';
 
 const Perfil: React.FC = () => {
   const { user: authUser, updateUser } = useAuth();
@@ -17,9 +17,10 @@ const Perfil: React.FC = () => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     first_name: '',
-    last_name: '',
-    email: ''
+    last_name: ''
   });
+
+  const isAdmin = authUser?.role === 'ADMINISTRATIVO';
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -29,8 +30,7 @@ const Perfil: React.FC = () => {
         setProfileData(data);
         setFormData({
           first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email
+          last_name: data.last_name
         });
       } catch (error) {
         console.error('Error al cargar el perfil:', error);
@@ -56,8 +56,9 @@ const Perfil: React.FC = () => {
     e.preventDefault();
     try {
       setIsLoading(true);
+      // Los usuarios comunes solo pueden actualizar nombre y apellido
       const updatedUser = await api.updateUsuario(formData);
-      setProfileData(updatedUser);
+      setProfileData(prev => prev ? { ...prev, ...updatedUser } : null);
       updateUser({ ...authUser!, ...updatedUser });
       setIsEditing(false);
       toast({
@@ -135,7 +136,7 @@ const Perfil: React.FC = () => {
                 <div className="mt-3 px-4 py-1 bg-blue-100 text-blue-800 rounded-full inline-flex items-center">
                   {profileData?.role === 'ESTUDIANTE' && <School className="h-4 w-4 mr-1" />}
                   {profileData?.role === 'PROFESOR' && <BookOpen className="h-4 w-4 mr-1" />}
-                  {profileData?.role === 'ADMINISTRATIVO' && <UserRound className="h-4 w-4 mr-1" />}
+                  {profileData?.role === 'ADMINISTRATIVO' && <ShieldAlert className="h-4 w-4 mr-1" />}
                   {getRoleInSpanish(profileData?.role || '')}
                 </div>
 
@@ -157,7 +158,9 @@ const Perfil: React.FC = () => {
             <CardHeader>
               <CardTitle>Información Personal</CardTitle>
               <CardDescription>
-                Actualiza tu información de contacto y configuración de cuenta
+                {isAdmin
+                  ? "Como administrador, puedes actualizar toda tu información de contacto"
+                  : "Puedes actualizar tu nombre y apellido. Para cambios en otros campos, contacta al administrador"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -185,18 +188,23 @@ const Perfil: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Label htmlFor="email">
+                    Correo Electrónico
+                    {!isAdmin && <span className="text-xs text-gray-500 ml-2">(Solo lectura)</span>}
+                  </Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={profileData?.email || ''}
+                    disabled={true} // El correo siempre es de solo lectura para usuarios comunes
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Nombre de Usuario</Label>
+                  <Label htmlFor="username">
+                    Nombre de Usuario
+                    <span className="text-xs text-gray-500 ml-2">(Solo lectura)</span>
+                  </Label>
                   <Input
                     id="username"
                     value={profileData?.username || ''}
@@ -204,7 +212,10 @@ const Perfil: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Rol</Label>
+                  <Label htmlFor="role">
+                    Rol
+                    <span className="text-xs text-gray-500 ml-2">(Solo lectura)</span>
+                  </Label>
                   <Input
                     id="role"
                     value={getRoleInSpanish(profileData?.role || '')}
@@ -214,7 +225,10 @@ const Perfil: React.FC = () => {
 
                 {profileData?.role === 'ESTUDIANTE' && profileData?.curso_detail && (
                   <div className="space-y-2">
-                    <Label htmlFor="curso">Curso</Label>
+                    <Label htmlFor="curso">
+                      Curso
+                      <span className="text-xs text-gray-500 ml-2">(Solo lectura)</span>
+                    </Label>
                     <Input
                       id="curso"
                       value={`${profileData.curso_detail.nombre} (${profileData.curso_detail.nivel})`}
@@ -233,8 +247,7 @@ const Perfil: React.FC = () => {
                           setIsEditing(false);
                           setFormData({
                             first_name: profileData?.first_name || '',
-                            last_name: profileData?.last_name || '',
-                            email: profileData?.email || ''
+                            last_name: profileData?.last_name || ''
                           });
                         }}
                       >

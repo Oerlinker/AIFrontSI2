@@ -188,7 +188,12 @@ const Notas: React.FC = () => {
       return api.createNota(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notas', selectedMateria, selectedPeriodo] });
+      queryClient.invalidateQueries({
+        queryKey: ['notas', selectedMateria, selectedPeriodo],
+        refetchType: 'active',
+        exact: false
+      });
+      refetchNotas();
       toast({
         title: "Calificación registrada",
         description: "La calificación ha sido registrada exitosamente",
@@ -209,7 +214,12 @@ const Notas: React.FC = () => {
       return api.updateNota(id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notas', selectedMateria, selectedPeriodo] });
+      queryClient.invalidateQueries({
+        queryKey: ['notas', selectedMateria, selectedPeriodo],
+        refetchType: 'active',
+        exact: false
+      });
+      refetchNotas();
       toast({
         title: "Calificación actualizada",
         description: "La calificación ha sido actualizada exitosamente",
@@ -1278,5 +1288,4 @@ const Notas: React.FC = () => {
 };
 
 export default Notas;
-
 

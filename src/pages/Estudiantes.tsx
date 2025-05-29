@@ -45,12 +45,15 @@ import {Badge} from '@/components/ui/badge';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 
 // Tipo para estudiante
-interface Estudiante extends User {
+interface Estudiante extends Omit<User, 'curso_detail'> {
     curso?: number;
     curso_detail?: {
         id: number;
         nombre: string;
+        nivel: string;
+        materias: number[];
     };
+    is_active: boolean;
 }
 
 // Tipo para el formulario
@@ -62,6 +65,7 @@ interface EstudianteForm {
     last_name: string;
     curso?: number;
     is_active: boolean;
+    role?: 'ESTUDIANTE' | 'PROFESOR' | 'ADMINISTRATIVO';
 }
 
 const Estudiantes: React.FC = () => {
@@ -77,7 +81,8 @@ const Estudiantes: React.FC = () => {
         first_name: "",
         last_name: "",
         curso: undefined,
-        is_active: true
+        is_active: true,
+        role: "ESTUDIANTE" // Por defecto será estudiante
     });
     const [filterCurso, setFilterCurso] = useState<string>('ALL');
 
@@ -206,7 +211,8 @@ const Estudiantes: React.FC = () => {
             first_name: "",
             last_name: "",
             curso: undefined,
-            is_active: true
+            is_active: true,
+            role: "ESTUDIANTE" // Por defecto será estudiante
         });
         setIsDialogOpen(true);
     };
@@ -220,7 +226,8 @@ const Estudiantes: React.FC = () => {
             first_name: estudiante.first_name,
             last_name: estudiante.last_name,
             curso: estudiante.curso,
-            is_active: estudiante.is_active
+            is_active: estudiante.is_active,
+            role: estudiante.role
         });
         setIsDialogOpen(true);
     };
@@ -246,16 +253,22 @@ const Estudiantes: React.FC = () => {
 
         if (currentEstudiante) {
             // Actualizar estudiante existente
-            const updateData: Partial<EstudianteForm> = {...formData};
-            if (!updateData.password) {
-                delete updateData.password; // No enviar contraseña vacía
-            }
+            const updateData: Partial<EstudianteForm> = {
+                username: formData.username,
+                email: formData.email,
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                curso: formData.curso,
+                is_active: formData.is_active,
+                role: formData.role
+            };
+
             updateEstudianteMutation.mutate({
                 id: currentEstudiante.id,
                 data: updateData
             });
         } else {
-            // Crear nuevo estudiante
+            // Crear nuevo estudiante (aquí sí incluimos la contraseña)
             createEstudianteMutation.mutate(formData);
         }
     };
@@ -508,20 +521,20 @@ const Estudiantes: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password">
-                                    {currentEstudiante ? "Contraseña (dejar en blanco para mantener)" : "Contraseña"}
-                                </Label>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="******"
-                                    value={formData.password || ""}
-                                    onChange={handleInputChange}
-                                    required={!currentEstudiante}
-                                />
-                            </div>
+                            {!currentEstudiante && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="password">Contraseña</Label>
+                                    <Input
+                                        id="password"
+                                        name="password"
+                                        type="password"
+                                        placeholder="******"
+                                        value={formData.password || ""}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <Label htmlFor="curso">Curso</Label>
@@ -540,6 +553,42 @@ const Estudiantes: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="is_active">Estado</Label>
+                                <select
+                                    id="is_active"
+                                    name="is_active"
+                                    value={formData.is_active ? "true" : "false"}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            is_active: e.target.value === "true",
+                                        }))
+                                    }
+                                    className="w-full px-3 py-2 border rounded-md"
+                                >
+                                    <option value="true">Activo</option>
+                                    <option value="false">Inactivo</option>
+                                </select>
+                            </div>
+
+                            {isAdmin && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="role">Rol</Label>
+                                    <select
+                                        id="role"
+                                        name="role"
+                                        value={formData.role || ""}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border rounded-md"
+                                    >
+                                        <option value="ESTUDIANTE">Estudiante</option>
+                                        <option value="ADMINISTRATIVO">Administrativo</option>
+                                        <option value="PROFESOR">Profesor</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
 
                         <DialogFooter>

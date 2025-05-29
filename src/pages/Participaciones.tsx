@@ -16,8 +16,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-  CardFooter,
+  CardTitle
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -44,7 +43,7 @@ import { es } from "date-fns/locale";
 import { Materia, Participacion, Curso } from '@/types/academic';
 import { User } from '@/types/auth';
 import { toast } from "@/hooks/use-toast";
-import { MessageCircle, Plus, Pencil, Save, Loader2, Trash2 } from 'lucide-react';
+import { MessageCircle, Plus, Pencil, Loader2, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 
@@ -69,10 +68,10 @@ interface ParticipacionFilters {
   estudiante?: number;
   materia?: number;
   curso?: number;
-  fecha?: string;       // Para filtrar por una fecha específica (YYYY-MM-DD)
-  fecha_inicio?: string; // Para filtrar por un rango de fechas
-  fecha_fin?: string;   // Para filtrar por un rango de fechas
-  tipo?: string;        // Tipo de participación (ACTIVA, PASIVA, etc.)
+  fecha?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  tipo?: string;
 }
 
 const Participaciones: React.FC = () => {
@@ -256,8 +255,11 @@ const Participaciones: React.FC = () => {
     mutationFn: (data: ParticipacionFormData) => api.recordParticipacion(data as Participacion),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['participaciones', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null]
+        queryKey: ['participaciones', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
+        refetchType: 'active',
+        exact: false
       });
+      refetchParticipaciones();
       toast({
         title: "Participación registrada",
         description: "La participación ha sido registrada exitosamente",
@@ -281,8 +283,11 @@ const Participaciones: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['participaciones', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null]
+        queryKey: ['participaciones', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
+        refetchType: 'active',
+        exact: false
       });
+      refetchParticipaciones();
       toast({
         title: "Participación actualizada",
         description: "La participación ha sido actualizada exitosamente",
@@ -304,8 +309,11 @@ const Participaciones: React.FC = () => {
     mutationFn: (id: number) => api.deleteParticipacion(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['participaciones', selectedMateria, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null]
+        queryKey: ['participaciones', selectedMateria, selectedCurso, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
+        refetchType: 'active',
+        exact: false
       });
+      refetchParticipaciones();
       toast({
         title: "Participación eliminada",
         description: "La participación ha sido eliminada exitosamente",
