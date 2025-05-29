@@ -172,8 +172,15 @@ const api = {
         axiosInstance.get('/usuarios/estudiantes/', { params: filters }).then(res => res.data),
     createUsuario: (data: Omit<User, 'id'>): Promise<User> =>
         axiosInstance.post('/usuarios/registro/', data).then(res => res.data),
-    updateUsuario: (id: number, data: Partial<User>): Promise<User> =>
+    updateUsuario: (data: Partial<User>): Promise<User> =>
         axiosInstance.put(`/usuarios/perfil/`, data).then(res => res.data),
+    adminUpdateUsuario: (id: number, data: Partial<User>): Promise<{message: string, user: User}> =>
+        axiosInstance.put(`/usuarios/actualizar/${id}/`, data)
+            .then(res => res.data)
+            .catch(error => {
+                console.error(`Error al actualizar usuario ${id}:`, error);
+                throw error;
+            }),
     deleteUsuario: (id: number): Promise<void> =>
         axiosInstance.delete(`/usuarios/${id}/`).then(() => {}),
 

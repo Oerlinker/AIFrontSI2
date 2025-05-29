@@ -134,13 +134,13 @@ const Estudiantes: React.FC = () => {
     // Mutación para actualizar un estudiante
     const updateEstudianteMutation = useMutation({
         mutationFn: ({id, data}: { id: number; data: Partial<EstudianteForm> }) => {
-            return api.updateUsuario(id, data);
+            return api.adminUpdateUsuario(id, data);
         },
-        onSuccess: () => {
+        onSuccess: (response) => {
             queryClient.invalidateQueries({queryKey: ['estudiantes']});
             toast({
                 title: "Estudiante actualizado",
-                description: "Los datos del estudiante han sido actualizados",
+                description: response.message || "Los datos del estudiante han sido actualizados",
             });
             handleCloseDialog();
         },

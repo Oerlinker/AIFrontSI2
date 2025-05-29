@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   username: string;
@@ -8,6 +7,13 @@ export interface User {
   role: 'PROFESOR' | 'ESTUDIANTE' | 'ADMINISTRATIVO';
   is_active: boolean;
   profile?: UserProfile;
+  curso?: number | null;
+  curso_detail?: {
+    id: number;
+    nombre: string;
+    nivel: string;
+    materias: number[];
+  } | null;
 }
 
 export interface UserProfile {
