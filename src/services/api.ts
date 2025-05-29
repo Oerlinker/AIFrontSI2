@@ -155,6 +155,26 @@ axiosInstance.interceptors.response.use(
     }
 );
 
+
+export const getMateriasByRole = async (user: any | null, selectedMateria: number | null, setSelectedMateria: (id: number) => void) => {
+    const allMaterias = await axiosInstance.get('/materias/').then(res => res.data);
+
+    // Si es profesor, filtrar materias por profesor
+    if (user?.role === 'PROFESOR' && user?.id) {
+        const materiasFiltradas = allMaterias.filter((materia: any) => materia.profesor === user.id);
+
+        // Si hay materias filtradas y no hay materia seleccionada, seleccionar la primera automáticamente
+        if (materiasFiltradas.length > 0 && !selectedMateria) {
+            setSelectedMateria(materiasFiltradas[0].id);
+        }
+
+        return materiasFiltradas;
+    } else {
+        // Si es admin o cualquier otro rol, devolver todas las materias
+        return allMaterias;
+    }
+};
+
 // Métodos de la API
 const api = {
     // Autenticación

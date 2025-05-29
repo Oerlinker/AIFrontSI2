@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/services/api';
+import api, { getMateriasByRole } from '@/services/api';
 import {
   Table,
   TableBody,
@@ -179,16 +179,7 @@ const Participaciones: React.FC = () => {
     isLoading: isLoadingMaterias
   } = useQuery<Materia[]>({
     queryKey: ['materias-profesor'],
-    queryFn: async () => {
-      if (isProfesor) {
-        // Filtrar materias por profesor
-        const allMaterias = await api.fetchMaterias();
-        return allMaterias.filter((materia: Materia) => materia.profesor === user?.id);
-      } else {
-        // Devolver todas las materias para administrador
-        return api.fetchMaterias();
-      }
-    }
+    queryFn: () => getMateriasByRole(user, selectedMateria, setSelectedMateria)
   });
 
   // Nueva consulta para obtener cursos

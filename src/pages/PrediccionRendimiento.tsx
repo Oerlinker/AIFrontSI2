@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/services/api';
+import api, { getMateriasByRole } from '@/services/api';
 import {
   Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -87,11 +87,7 @@ const PrediccionRendimiento: React.FC = () => {
 
   const { data: materias = [], isFetching: isFetchingMaterias } = useQuery({
     queryKey: ['materias-profesor'],
-    queryFn: async () => {
-      const allMaterias = await api.fetchMaterias();
-      return isProfesor ? allMaterias.filter((m: Materia) => m.profesor === user?.id) : allMaterias;
-    },
-    // keepPreviousData: true,
+    queryFn: () => getMateriasByRole(user, selectedMateria, setSelectedMateria)
   });
 
   const { data: cursos = [], isFetching: isFetchingCursos } = useQuery({
@@ -778,4 +774,6 @@ const PrediccionRendimiento: React.FC = () => {
 };
 
 export default PrediccionRendimiento;
+
+
 

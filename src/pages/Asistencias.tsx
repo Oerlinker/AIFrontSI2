@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api, { PaginatedResponse } from '@/services/api';
+import api, { PaginatedResponse, getMateriasByRole } from '@/services/api';
 import {
   Table,
   TableBody,
@@ -65,14 +65,7 @@ const Asistencias: React.FC = () => {
     isLoading: isLoadingMaterias
   } = useQuery({
     queryKey: ['materias-profesor'],
-    queryFn: async () => {
-      if (isProfesor && user?.id) {
-        const allMaterias = await api.fetchMaterias();
-        return allMaterias.filter((materia: Materia) => materia.profesor === user.id);
-      } else {
-        return api.fetchMaterias();
-      }
-    },
+    queryFn: () => getMateriasByRole(user, selectedMateria, setSelectedMateria),
     enabled: hasAccess
   });
 
