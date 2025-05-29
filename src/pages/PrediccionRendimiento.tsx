@@ -243,7 +243,7 @@ const PrediccionRendimiento: React.FC = () => {
   const handleGenerarPrediccion = async () => {
     if (!selectedMateria || !selectedEstudiante) return;
 
-    await createPrediccionMutation.mutate({
+     createPrediccionMutation.mutate({
       estudiante: selectedEstudiante,
       materia: selectedMateria
     });
